@@ -53,23 +53,23 @@ export default function PagosAdminPage() {
   return (
     <div className="flex flex-col gap-5">
       {/* Hero strip oscuro */}
-      <section className="bg-trilce-accent text-white rounded-lg px-10 py-7 flex items-center justify-between flex-wrap gap-4">
+      <section className="bg-trilce-accent text-white rounded-lg px-5 sm:px-10 py-5 sm:py-7 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-bold tracking-widest bg-trilce-primary px-2.5 py-1 rounded-sm self-start">
             PERIODO 2026-I
           </span>
-          <h2 className="text-2xl font-bold">Recaudación al {fmtFechaCorta(new Date())}</h2>
-          <p className="text-sm text-white/60">
+          <h2 className="text-xl sm:text-2xl font-bold">Recaudación al {fmtFechaCorta(new Date())}</h2>
+          <p className="text-xs sm:text-sm text-white/60">
             {fmtSoles(stats.recaudado)} cobrados de {fmtSoles(stats.recaudado + stats.pendiente + stats.vencido)} facturados
           </p>
         </div>
-        <Button variant="primary" onClick={pickFirstPendiente}>
+        <Button variant="primary" onClick={pickFirstPendiente} className="self-start md:self-auto">
           <Icon name="Plus" size={16} /> Registrar pago
         </Button>
       </section>
 
       {/* KPIs */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="Recaudado" value={fmtSoles(stats.recaudado)} icon="Wallet" iconColor="text-success" />
         <KpiCard label="Pendiente" value={fmtSoles(stats.pendiente)} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPend} pagos pendientes`} />
         <KpiCard label="Vencidos" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={`${stats.cntVenc} alumnos con mora`} />
@@ -77,13 +77,13 @@ export default function PagosAdminPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 p-1.5 bg-bg-card rounded-md border border-border">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-center gap-1 sm:gap-1.5 p-1.5 bg-bg-card rounded-md border border-border overflow-x-auto">
           {(['todos', 'pendiente', 'pagado', 'vencido'] as const).map((k) => (
             <button
               key={k}
               onClick={() => setTab(k)}
-              className={`px-4 py-2 rounded-sm text-[13px] capitalize transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-sm text-[13px] capitalize whitespace-nowrap transition-colors ${
                 tab === k ? 'bg-trilce-primary text-text-on-primary font-semibold' : 'text-text-secondary'
               }`}
             >
@@ -91,26 +91,27 @@ export default function PagosAdminPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-72 focus-within:border-trilce-primary transition-colors">
-            <Icon name="Search" size={16} className="text-text-muted" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border flex-1 lg:w-72 lg:flex-none focus-within:border-trilce-primary transition-colors">
+            <Icon name="Search" size={16} className="text-text-muted flex-shrink-0" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar alumno, concepto o monto…"
-              className="flex-1 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
+              className="flex-1 min-w-0 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
             />
           </label>
-          <Button variant="secondary">
-            <Icon name="Download" size={16} /> Exportar
+          <Button variant="secondary" className="!px-3 sm:!px-5 flex-shrink-0">
+            <Icon name="Download" size={16} />
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Tabla — header solo md+, filas como cards en mobile */}
       <div className="bg-bg-card border border-border rounded-md overflow-hidden">
-        <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
+        <div className="hidden md:grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
           <span>ALUMNO / CONCEPTO</span>
           <span>VENCIMIENTO</span>
           <span>MONTO</span>
@@ -164,8 +165,12 @@ function PagoRow({
   }[pago.estado];
 
   return (
-    <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 border-b border-border items-center text-[13px]">
-      <div className="flex flex-col gap-0.5 min-w-0">
+    <div className="
+      grid grid-cols-2 md:grid-cols-[1fr_150px_120px_140px_180px]
+      gap-x-3 gap-y-2 md:gap-6
+      px-4 sm:px-6 py-4 border-b border-border md:items-center text-[13px]
+    ">
+      <div className="col-span-2 md:col-span-1 flex flex-col gap-0.5 min-w-0">
         <span className="font-semibold text-text-primary truncate">
           {pago.alumno ? `${pago.alumno.nombres} ${pago.alumno.apellidos} · ${pago.alumno.grado} — ${pago.alumno.seccion}` : `Pago #${pago.id}`}
         </span>
@@ -173,12 +178,16 @@ function PagoRow({
           {pago.descripcion}
         </span>
       </div>
-      <span className={pago.estado === 'vencido' ? 'text-danger' : 'text-text-secondary'}>
+      <span className={`order-2 md:order-none ${pago.estado === 'vencido' ? 'text-danger' : 'text-text-secondary'}`}>
+        <span className="md:hidden text-text-muted text-[11px] mr-1 font-normal">Vence:</span>
         {fmtFecha(pago.fecha_vencimiento)}
       </span>
-      <span className="font-semibold text-text-primary">{fmtSoles(pago.monto)}</span>
-      <span><Badge variant={estadoCfg.v}>{estadoCfg.label}</Badge></span>
-      <div className="flex">
+      <span className="font-semibold text-text-primary text-right md:text-left order-1 md:order-none">
+        <span className="md:hidden text-text-muted text-[11px] mr-1 font-normal">Monto:</span>
+        {fmtSoles(pago.monto)}
+      </span>
+      <span className="order-3 md:order-none"><Badge variant={estadoCfg.v}>{estadoCfg.label}</Badge></span>
+      <div className="flex justify-end md:justify-start order-4 md:order-none">
         {pago.estado === 'pendiente' && (
           <Button variant="primary" className="!px-4 !py-1.5 text-xs" onClick={onRegistrar}>
             Registrar pago
