@@ -15,7 +15,7 @@ export default function ReportePagosPorPeriodoPage() {
   return (
     <div className="flex flex-col gap-5">
       {/* KPIs */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="RECAUDADO" value={`S/ ${totales.pagado.toLocaleString('es-PE')}`} emphasize emphasizeColor="success" />
         <KpiCard label="POR COBRAR" value={`S/ ${totales.pendiente.toLocaleString('es-PE')}`} emphasize emphasizeColor="warning" />
         <KpiCard label="% COBRANZA" value={`${cobranza}%`} emphasize emphasizeColor="primary" />
@@ -23,8 +23,8 @@ export default function ReportePagosPorPeriodoPage() {
       </div>
 
       {/* Bar chart por mes */}
-      <div className="bg-bg-card border border-border rounded-md p-6">
-        <header className="flex items-center justify-between mb-5">
+      <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
           <div className="flex items-center gap-2.5">
             <Icon name="ChartBar" size={18} className="text-trilce-primary" />
             <h2 className="text-base font-bold">Recaudación por mes</h2>
@@ -40,10 +40,10 @@ export default function ReportePagosPorPeriodoPage() {
             return (
               <div key={m.mes} className="flex flex-col items-center gap-1.5">
                 <div
-                  className={`w-14 rounded-sm ${isMax ? 'bg-success' : heightPct > 50 ? 'bg-trilce-primary' : 'bg-trilce-primary-soft'}`}
+                  className={`w-8 sm:w-14 rounded-sm ${isMax ? 'bg-success' : heightPct > 50 ? 'bg-trilce-primary' : 'bg-trilce-primary-soft'}`}
                   style={{ height: `${Math.max(20, heightPct)}%` }}
                 />
-                <span className="text-[11px] text-text-secondary">
+                <span className="text-[10px] sm:text-[11px] text-text-secondary text-center">
                   {shortMes(m.mes)} (S/ {(m.total / 1000).toFixed(0)}k)
                 </span>
               </div>
@@ -53,7 +53,7 @@ export default function ReportePagosPorPeriodoPage() {
       </div>
 
       {/* Top alumnos con mora — placeholder */}
-      <div className="bg-bg-card border border-border rounded-md p-6">
+      <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
         <header className="flex items-center gap-2.5 mb-3">
           <Icon name="TriangleAlert" size={18} className="text-danger" />
           <h2 className="text-base font-bold">Top alumnos con mora</h2>

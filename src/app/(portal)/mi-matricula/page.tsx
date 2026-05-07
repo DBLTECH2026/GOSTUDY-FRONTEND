@@ -16,26 +16,26 @@ export default function MiMatriculaPage() {
   return (
     <div className="flex flex-col gap-5">
       {/* Hero */}
-      <div className="bg-trilce-primary text-text-on-primary rounded-lg p-8 flex items-center justify-between">
-        <div className="flex flex-col gap-2">
+      <div className="bg-trilce-primary text-text-on-primary rounded-lg p-5 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col gap-2 min-w-0">
           <span className="text-[11px] font-bold tracking-widest bg-trilce-primary-dark px-2.5 py-1 rounded-sm self-start">
             MATRÍCULA ACTIVA
           </span>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold">
             Estás matriculado en {matricula.grado} {matricula.nivel} — {matricula.seccion}
           </h2>
-          <p className="text-sm text-trilce-primary-light">
+          <p className="text-xs sm:text-sm text-trilce-primary-light">
             {matricula.periodo_descripcion} — desde el {fmtFecha(matricula.fecha_matricula)}
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-xl font-bold">INS-{String(matricula.id).padStart(8, '0')}</div>
+        <div className="text-left md:text-right flex-shrink-0">
+          <div className="text-lg sm:text-xl font-bold">INS-{String(matricula.id).padStart(8, '0')}</div>
           <div className="text-[11px] text-trilce-primary-light">Código de matrícula</div>
         </div>
       </div>
 
       {/* 2 columnas: datos académicos + apoderado */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Card>
           <SectionHeader icon="GraduationCap" title="Datos académicos" />
           <DataRow label="Periodo" value={matricula.periodo_descripcion} />
@@ -90,7 +90,7 @@ export default function MiMatriculaPage() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-bg-card border border-border rounded-md p-6 flex flex-col gap-3">
+    <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6 flex flex-col gap-3">
       {children}
     </div>
   );
@@ -116,12 +116,12 @@ function DataRow({ label, value }: { label: string; value: string }) {
 
 function DocRow({ nombre }: { nombre: string }) {
   return (
-    <div className="flex items-center justify-between bg-bg-muted rounded-sm px-4 py-3 mt-1">
-      <div className="flex items-center gap-3">
-        <Icon name="FileText" size={20} className="text-trilce-primary" />
-        <span className="text-sm font-semibold text-text-primary">{nombre}</span>
+    <div className="flex items-center justify-between bg-bg-muted rounded-sm px-3 sm:px-4 py-3 mt-1 gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <Icon name="FileText" size={20} className="text-trilce-primary flex-shrink-0" />
+        <span className="text-sm font-semibold text-text-primary truncate">{nombre}</span>
       </div>
-      <button className="text-xs font-semibold text-trilce-primary hover:underline">Descargar</button>
+      <button className="text-xs font-semibold text-trilce-primary hover:underline whitespace-nowrap flex-shrink-0">Descargar</button>
     </div>
   );
 }

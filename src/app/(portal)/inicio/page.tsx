@@ -20,22 +20,22 @@ export default function PortalInicioPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Hero saludo */}
-      <div className="bg-trilce-accent text-white rounded-lg p-8 flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-md bg-trilce-primary flex items-center justify-center text-white font-bold text-2xl">
+      <div className="bg-trilce-accent text-white rounded-lg p-5 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-md bg-trilce-primary flex items-center justify-center text-white font-bold text-xl sm:text-2xl flex-shrink-0">
             JP
           </div>
-          <div>
+          <div className="min-w-0">
             <Badge variant="primary" className="mb-2">3RO PRIMARIA — SECCIÓN A</Badge>
-            <h1 className="text-3xl font-bold">¡Hola, Juan! 👋</h1>
-            <p className="text-white/70 text-sm mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">¡Hola, Juan! 👋</h1>
+            <p className="text-white/70 text-xs sm:text-sm mt-1">
               {proximoPago
                 ? `Bienvenido a tu portal. Tu próxima cuota vence en ${diasHasta(proximoPago.fecha_vencimiento)} días.`
                 : 'Bienvenido a tu portal.'}
             </p>
           </div>
         </div>
-        <Link href="/mi-perfil">
+        <Link href="/mi-perfil" className="self-start md:self-auto">
           <Button variant="on-dark">
             Ver mi perfil <Icon name="ArrowRight" size={16} />
           </Button>
@@ -43,7 +43,7 @@ export default function PortalInicioPage() {
       </div>
 
       {/* Stats */}
-      <div className="flex gap-4 flex-wrap">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatBlock icon="CircleCheck" label="Asistencia" value="96%" tone="success" />
         <StatBlock icon="BookOpen" label="Cursos" value={String(cursosCompletados)} />
         <StatBlock icon="GraduationCap" label="Horas/sem" value={String(horasTotales)} />
@@ -51,9 +51,9 @@ export default function PortalInicioPage() {
       </div>
 
       {/* 2 columnas: matrícula + próximo pago */}
-      <div className="grid grid-cols-[2fr_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5">
         {/* Mi matrícula activa */}
-        <div className="bg-bg-card border border-border rounded-md p-6">
+        <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold">Mi matrícula activa</h2>
             <Badge variant="success">ACTIVA</Badge>
@@ -72,7 +72,7 @@ export default function PortalInicioPage() {
               <h3 className="text-sm font-bold">Mis cursos</h3>
               <Link href="/mis-cursos" className="text-xs font-semibold text-trilce-primary hover:underline">Ver todos →</Link>
             </div>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {cursos?.slice(0, 4).map((c) => (
                 <Link
                   key={c.id}
@@ -91,7 +91,7 @@ export default function PortalInicioPage() {
         </div>
 
         {/* Próximo pago */}
-        <div className="bg-bg-card border border-border rounded-md p-6 flex flex-col gap-4">
+        <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6 flex flex-col gap-4">
           <h2 className="text-base font-bold">Próximo pago</h2>
           {proximoPago ? (
             <>
@@ -144,7 +144,7 @@ function StatBlock({
     : tone === 'primary' ? 'text-trilce-primary'
     : 'text-text-secondary';
   return (
-    <div className="flex-1 bg-bg-card border border-border rounded-md p-4 flex items-center gap-4 min-w-[200px]">
+    <div className="bg-bg-card border border-border rounded-md p-4 flex items-center gap-3 sm:gap-4 min-w-0">
       <div className="w-10 h-10 rounded-sm bg-bg-muted flex items-center justify-center">
         <Icon name={icon} className={toneCls} />
       </div>
