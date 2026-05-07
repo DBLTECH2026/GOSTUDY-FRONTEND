@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMisPagos } from '@/modules/pagos/api';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
@@ -20,15 +20,43 @@ const TABS: { key: 'todos' | PagoEstado; label: string }[] = [
 export default function MisPagosPage() {
   const { data: pagos, isLoading } = useMisPagos();
   const [filterTab, setFilterTab] = useState<(typeof TABS)[number]['key']>('todos');
+  const [search, setSearch] = useState('');
+  const [year, setYear] = useState<number | null>(null);
   const [pagarPago, setPagarPago] = useState<Pago | null>(null);
   const [comprobantePago, setComprobantePago] = useState<Pago | null>(null);
 
-  const stats = useMemo(() => calcStats(pagos), [pagos]);
-  const filtered = filterTab === 'todos'
-    ? pagos
-    : pagos.filter((p) => p.estado === filterTab);
+  // Años disponibles según los datos. Se recalcula cuando cambian los pagos.
+  const availableYears = useMemo(() => {
+    const ys = new Set<number>();
+    for (const p of pagos) ys.add(parseInt(p.fecha_vencimiento.slice(0, 4), 10));
+    return Array.from(ys).sort((a, b) => b - a);
+  }, [pagos]);
 
-  const proximo = pagos.find((p) => p.estado === 'pendiente');
+  // Default al año más reciente disponible una vez cargan los pagos.
+  useEffect(() => {
+    if (year === null && availableYears.length > 0) {
+      setYear(availableYears[0]);
+    }
+  }, [availableYears, year]);
+
+  const stats = useMemo(() => calcStats(filterByYear(pagos, year)), [pagos, year]);
+
+  // Filtrado: año → tab → búsqueda libre.
+  const filtered = useMemo(() => {
+    let out = filterByYear(pagos, year);
+    if (filterTab !== 'todos') out = out.filter((p) => p.estado === filterTab);
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((p) =>
+        p.descripcion.toLowerCase().includes(q) ||
+        p.monto.toString().includes(q) ||
+        (p.metodo ?? '').includes(q),
+      );
+    }
+    return out;
+  }, [pagos, year, filterTab, search]);
+
+  const proximo = filterByYear(pagos, year).find((p) => p.estado === 'pendiente');
 
   if (isLoading) return <p className="text-text-secondary">Cargando pagos…</p>;
 
@@ -71,14 +99,17 @@ export default function MisPagosPage() {
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-60">
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-60 focus-within:border-trilce-primary transition-colors">
             <Icon name="Search" size={16} className="text-text-muted" />
-            <span className="text-[13px] text-text-muted">Buscar pago…</span>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border">
-            <span className="text-[13px] font-semibold text-text-primary">2026</span>
-            <Icon name="ChevronDown" size={16} className="text-text-muted" />
-          </div>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar pago…"
+              className="flex-1 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
+            />
+          </label>
+          <YearSelect years={availableYears} value={year} onChange={setYear} />
         </div>
       </div>
 
@@ -100,7 +131,11 @@ export default function MisPagosPage() {
           />
         ))}
         {filtered.length === 0 && (
-          <p className="p-8 text-center text-text-secondary">No hay pagos en esta categoría.</p>
+          <p className="p-8 text-center text-text-secondary">
+            {search.trim()
+              ? `No hay resultados para "${search.trim()}".`
+              : 'No hay pagos en esta categoría.'}
+          </p>
         )}
       </div>
 
@@ -283,6 +318,70 @@ function DataField({ label, value }: { label: string; value: string }) {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ─── Filtros ─── */
+
+function YearSelect({
+  years, value, onChange,
+}: {
+  years: number[];
+  value: number | null;
+  onChange: (y: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border hover:border-trilce-primary transition-colors"
+      >
+        <span className="text-[13px] font-semibold text-text-primary">{value ?? '—'}</span>
+        <Icon name="ChevronDown" size={16} className={`text-text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <ul className="absolute right-0 top-full mt-1.5 min-w-[100px] bg-bg-card border border-border rounded-md shadow-lg overflow-hidden z-10">
+          {years.map((y) => (
+            <li key={y}>
+              <button
+                type="button"
+                onClick={() => { onChange(y); setOpen(false); }}
+                className={`w-full text-left px-4 py-2 text-[13px] transition-colors ${
+                  value === y
+                    ? 'bg-trilce-primary-soft text-trilce-primary-dark font-semibold'
+                    : 'text-text-secondary hover:bg-bg-muted'
+                }`}
+              >
+                {y}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function filterByYear(pagos: Pago[], year: number | null): Pago[] {
+  if (year === null) return pagos;
+  return pagos.filter((p) => p.fecha_vencimiento.startsWith(String(year)));
 }
 
 /* ─── helpers ─── */

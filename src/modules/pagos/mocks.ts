@@ -4,6 +4,26 @@ import type { Pago, PagoListItem, EstadoCuenta } from './types';
 // Cuando lleguen, reemplazar las llamadas en api.ts por fetch real.
 
 export const MIS_PAGOS_MOCK: Pago[] = [
+  // ─── Año anterior (histórico) ───
+  {
+    id: 901, matricula_id: 99,
+    concepto: 'matricula', descripcion: 'Matrícula 2025',
+    monto: 320, mes: null,
+    fecha_vencimiento: '2025-03-01', fecha_pago: '2025-02-25',
+    metodo: 'efectivo', estado: 'pagado',
+    comprobante_url: null, observaciones: null, registrado_por: 1,
+    created_at: '2025-02-10T10:00:00Z',
+  },
+  {
+    id: 902, matricula_id: 99,
+    concepto: 'pension', descripcion: 'Pensión Diciembre 2025',
+    monto: 230, mes: 12,
+    fecha_vencimiento: '2025-12-05', fecha_pago: '2025-12-04',
+    metodo: 'transferencia', estado: 'pagado',
+    comprobante_url: null, observaciones: null, registrado_por: 1,
+    created_at: '2025-02-10T10:00:00Z',
+  },
+  // ─── Año actual ───
   {
     id: 1, matricula_id: 100,
     concepto: 'matricula', descripcion: 'Matrícula 2026',

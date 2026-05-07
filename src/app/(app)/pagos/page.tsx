@@ -13,6 +13,7 @@ export default function PagosAdminPage() {
   const [tab, setTab] = useState<'todos' | 'pendiente' | 'pagado' | 'vencido'>('todos');
   const { data: pagos, isLoading } = usePagosAdmin(tab === 'todos' ? {} : { estado: tab });
   const [modalPago, setModalPago] = useState<PagoListItem | null>(null);
+  const [search, setSearch] = useState('');
 
   const stats = useMemo(() => {
     const all = pagos;
@@ -25,9 +26,25 @@ export default function PagosAdminPage() {
     };
   }, [pagos]);
 
+  const filteredPagos = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return pagos;
+    return pagos.filter((p) => {
+      const alumno = p.alumno
+        ? `${p.alumno.nombres} ${p.alumno.apellidos} ${p.alumno.grado} ${p.alumno.seccion}`.toLowerCase()
+        : '';
+      return (
+        alumno.includes(q) ||
+        p.descripcion.toLowerCase().includes(q) ||
+        p.monto.toString().includes(q)
+      );
+    });
+  }, [pagos, search]);
+
   // Selecciona automáticamente el primer pago pendiente cuando admin clickea "Registrar pago" en el hero
   const pickFirstPendiente = () => {
-    const p = pagos.find((p) => p.estado === 'pendiente' || p.estado === 'vencido');
+    const p = filteredPagos.find((p) => p.estado === 'pendiente' || p.estado === 'vencido')
+      ?? pagos.find((p) => p.estado === 'pendiente' || p.estado === 'vencido');
     if (p) setModalPago(p);
   };
 
@@ -73,10 +90,16 @@ export default function PagosAdminPage() {
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-72">
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-72 focus-within:border-trilce-primary transition-colors">
             <Icon name="Search" size={16} className="text-text-muted" />
-            <span className="text-[13px] text-text-muted">Buscar alumno por nombre o DNI…</span>
-          </div>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar alumno, concepto o monto…"
+              className="flex-1 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
+            />
+          </label>
           <Button variant="secondary">
             <Icon name="Download" size={16} /> Exportar
           </Button>
@@ -93,10 +116,14 @@ export default function PagosAdminPage() {
           <span>ACCIONES</span>
         </div>
         {isLoading && <p className="p-6 text-text-secondary">Cargando…</p>}
-        {!isLoading && pagos.length === 0 && (
-          <p className="p-8 text-center text-text-secondary">No hay pagos en esta categoría.</p>
+        {!isLoading && filteredPagos.length === 0 && (
+          <p className="p-8 text-center text-text-secondary">
+            {search.trim()
+              ? `No hay resultados para "${search.trim()}".`
+              : 'No hay pagos en esta categoría.'}
+          </p>
         )}
-        {pagos.map((p) => (
+        {filteredPagos.map((p) => (
           <PagoRow key={p.id} pago={p} onRegistrar={() => setModalPago(p)} />
         ))}
       </div>
