@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMisPagos } from '@/modules/pagos/api';
 import { PagarOnlineModal } from '@/modules/pagos/components/PagarOnlineModal';
+import { VerComprobanteModal } from '@/modules/pagos/components/VerComprobanteModal';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { KpiCard } from '@/shared/components/KpiCard';
-import { Modal } from '@/shared/components/Modal';
 import { diasHasta, fmtFecha, fmtSoles } from '@/shared/lib/format';
 import type { Pago, PagoEstado } from '@/modules/pagos/types';
 
@@ -223,57 +223,6 @@ function EstadoBadge({ estado }: { estado: PagoEstado }) {
   };
   const cfg = map[estado];
   return <span><Badge variant={cfg.v}>{cfg.label}</Badge></span>;
-}
-
-/* ─── Modales ─── */
-
-function VerComprobanteModal({ pago, onClose }: { pago: Pago | null; onClose: () => void }) {
-  return (
-    <Modal
-      open={pago !== null}
-      onClose={onClose}
-      title="Comprobante de pago"
-      subtitle={pago ? `${pago.descripcion} — ${fmtSoles(pago.monto)}` : undefined}
-      width={500}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
-          <Button variant="primary">
-            <Icon name="Download" size={16} /> Descargar PDF
-          </Button>
-        </>
-      }
-    >
-      {pago && (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <DataField label="Concepto" value={pago.descripcion} />
-            <DataField label="Monto" value={fmtSoles(pago.monto)} />
-            <DataField label="Fecha de pago" value={pago.fecha_pago ? fmtFecha(pago.fecha_pago) : '—'} />
-            <DataField label="Método" value={pago.metodo ? capitalize(pago.metodo) : '—'} />
-          </div>
-          <div className="border-2 border-dashed border-border rounded-sm p-10 flex flex-col items-center justify-center gap-2 bg-bg-muted">
-            <Icon name="FileText" size={36} className="text-text-muted" />
-            <span className="text-xs text-text-muted">Vista previa del comprobante</span>
-            <span className="text-[11px] text-text-muted">(simulado mientras integramos auth)</span>
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-function DataField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[11px] font-bold tracking-wide text-text-muted">{label.toUpperCase()}</span>
-      <span className="text-sm font-semibold text-text-primary">{value}</span>
-    </div>
-  );
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /* ─── Filtros ─── */
