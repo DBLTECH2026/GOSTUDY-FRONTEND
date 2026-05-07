@@ -24,32 +24,32 @@ export default function EstadoCuentaPage({
   return (
     <div className="flex flex-col gap-5">
       {/* Header oscuro */}
-      <section className="bg-trilce-accent text-white rounded-lg px-10 py-7 flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-trilce-primary flex items-center justify-center text-white text-2xl font-bold">
+      <section className="bg-trilce-accent text-white rounded-lg px-5 sm:px-10 py-5 sm:py-7 flex flex-col gap-5 sm:gap-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-trilce-primary flex items-center justify-center text-white text-xl sm:text-2xl font-bold flex-shrink-0">
               {estudiante.nombres[0]}{estudiante.apellidos[0]}
             </div>
-            <div>
-              <h1 className="text-xl font-bold">{estudiante.nombres} {estudiante.apellidos}</h1>
-              <p className="text-sm text-white/60">DNI {estudiante.dni} · Código {estudiante.codigo_estudiante}</p>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold truncate">{estudiante.nombres} {estudiante.apellidos}</h1>
+              <p className="text-xs sm:text-sm text-white/60 truncate">DNI {estudiante.dni} · Código {estudiante.codigo_estudiante}</p>
             </div>
           </div>
-          <Button variant="on-dark">
+          <Button variant="on-dark" className="self-start md:self-auto">
             <Icon name="FileText" size={14} /> Generar PDF
           </Button>
         </div>
-        <div className="flex gap-8 pt-2 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-3 sm:pt-2 border-t border-white/10">
           <Stat value={fmtSoles(totales.pagado)} label="PAGADO" tone="success" />
-          <Stat value={`S/ ${totales.pendiente.toLocaleString('es-PE')}`} label="PENDIENTE" tone="warning" />
-          <Stat value={`S/ ${totales.vencido.toLocaleString('es-PE')}`} label="VENCIDO" tone="danger" />
+          <Stat value={fmtSoles(totales.pendiente)} label="PENDIENTE" tone="warning" />
+          <Stat value={fmtSoles(totales.vencido)} label="VENCIDO" tone="danger" />
           <Stat value={`${totales.cobranza_porcentaje}%`} label="COBRANZA" tone="primary" />
         </div>
       </section>
 
       {/* Detalle de pagos */}
-      <div className="bg-bg-card border border-border rounded-md p-6">
-        <header className="flex items-center justify-between mb-4">
+      <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div className="flex items-center gap-2.5">
             <Icon name="List" className="text-trilce-primary" />
             <h2 className="text-base font-bold">Detalle de pagos del periodo</h2>
@@ -65,7 +65,7 @@ export default function EstadoCuentaPage({
             return (
               <div
                 key={p.id}
-                className={`flex items-center justify-between px-4 py-3 rounded-sm ${
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-3 rounded-sm ${
                   isProximo ? 'bg-trilce-primary-soft border border-trilce-primary' : 'bg-bg-muted'
                 }`}
               >

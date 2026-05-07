@@ -15,16 +15,16 @@ export default function ReporteMatriculasPorSeccionPage() {
   return (
     <div className="flex flex-col gap-5">
       {/* Resumen oscuro */}
-      <section className="bg-trilce-accent text-white rounded-lg px-8 py-5 flex items-center justify-between">
+      <section className="bg-trilce-accent text-white rounded-lg px-5 sm:px-8 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-bold">{secciones.length} secciones activas</h2>
           <p className="text-xs text-white/60">{totalMatr} matriculados de {totalCupos} cupos disponibles</p>
         </div>
-        <span className="text-4xl font-bold text-trilce-primary">{cobertura}%</span>
+        <span className="text-3xl sm:text-4xl font-bold text-trilce-primary">{cobertura}%</span>
       </section>
 
-      {/* Grid de secciones — 2 cols */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Grid de secciones */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {secciones.map((s) => <SeccionCard key={s.seccion_id} seccion={s} />)}
       </div>
     </div>
