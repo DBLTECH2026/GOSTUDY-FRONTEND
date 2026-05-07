@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { registrarPago, usePagosAdmin } from '@/modules/pagos/api';
+import { VerComprobanteModal } from '@/modules/pagos/components/VerComprobanteModal';
 import type { PagoListItem, PagoMetodo } from '@/modules/pagos/types';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
@@ -13,6 +14,7 @@ export default function PagosAdminPage() {
   const [tab, setTab] = useState<'todos' | 'pendiente' | 'pagado' | 'vencido'>('todos');
   const { data: pagos, isLoading } = usePagosAdmin(tab === 'todos' ? {} : { estado: tab });
   const [modalPago, setModalPago] = useState<PagoListItem | null>(null);
+  const [comprobantePago, setComprobantePago] = useState<PagoListItem | null>(null);
   const [search, setSearch] = useState('');
 
   const stats = useMemo(() => {
@@ -124,18 +126,36 @@ export default function PagosAdminPage() {
           </p>
         )}
         {filteredPagos.map((p) => (
-          <PagoRow key={p.id} pago={p} onRegistrar={() => setModalPago(p)} />
+          <PagoRow
+            key={p.id}
+            pago={p}
+            onRegistrar={() => setModalPago(p)}
+            onVerComprobante={() => setComprobantePago(p)}
+          />
         ))}
       </div>
 
       {modalPago && <RegistrarPagoModal pago={modalPago} onClose={() => setModalPago(null)} />}
+      <VerComprobanteModal
+        pago={comprobantePago}
+        onClose={() => setComprobantePago(null)}
+        showAlumno
+      />
     </div>
   );
 }
 
 /* ─── locales ─── */
 
-function PagoRow({ pago, onRegistrar }: { pago: PagoListItem; onRegistrar: () => void }) {
+function PagoRow({
+  pago,
+  onRegistrar,
+  onVerComprobante,
+}: {
+  pago: PagoListItem;
+  onRegistrar: () => void;
+  onVerComprobante: () => void;
+}) {
   const estadoCfg = {
     pagado:    { v: 'success' as const, label: 'Pagado' },
     pendiente: { v: 'warning' as const, label: 'Pendiente' },
@@ -165,7 +185,12 @@ function PagoRow({ pago, onRegistrar }: { pago: PagoListItem; onRegistrar: () =>
           </Button>
         )}
         {pago.estado === 'pagado' && (
-          <button className="text-trilce-primary font-semibold hover:underline">Ver comprobante</button>
+          <button
+            onClick={onVerComprobante}
+            className="text-trilce-primary font-semibold hover:underline whitespace-nowrap"
+          >
+            Ver comprobante
+          </button>
         )}
         {pago.estado === 'vencido' && (
           <button className="text-trilce-primary font-semibold hover:underline" onClick={onRegistrar}>
