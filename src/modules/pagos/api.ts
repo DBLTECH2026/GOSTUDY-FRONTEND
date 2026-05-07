@@ -43,7 +43,27 @@ export function useMisPagos() {
     });
   }, []);
 
-  return { data, isLoading };
+  /**
+   * DEMO: marca un pago como pagado en el estado local. En producción
+   * (cuando A integre auth y se exponga un endpoint de pago en línea
+   * para estudiantes) esto haría POST al backend y refrescaría.
+   */
+  const marcarPagado = (pagoId: number, metodo: import('./types').PagoMetodo) => {
+    setData((prev) =>
+      prev.map((p) =>
+        p.id === pagoId
+          ? {
+              ...p,
+              estado: 'pagado' as const,
+              metodo,
+              fecha_pago: new Date().toISOString().slice(0, 10),
+            }
+          : p,
+      ),
+    );
+  };
+
+  return { data, isLoading, marcarPagado };
 }
 
 export function useEstadoCuenta(_estudianteId: number) {
