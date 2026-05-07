@@ -3,6 +3,7 @@
 import { useMiMatricula, useMiPerfil } from '@/modules/portal/api';
 import { Badge } from '@/shared/components/Badge';
 import { Icon } from '@/shared/components/Icon';
+import { fmtFecha } from '@/shared/lib/format';
 
 export default function MiMatriculaPage() {
   const { data: matricula, isLoading } = useMiMatricula();
@@ -125,8 +126,3 @@ function DocRow({ nombre }: { nombre: string }) {
   );
 }
 
-function fmtFecha(iso: string) {
-  const d = new Date(iso);
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]} ${d.getFullYear()}`;
-}

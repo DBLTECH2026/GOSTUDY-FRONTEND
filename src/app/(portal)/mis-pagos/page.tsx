@@ -6,6 +6,8 @@ import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { KpiCard } from '@/shared/components/KpiCard';
+import { Modal } from '@/shared/components/Modal';
+import { diasHasta, fmtFecha, fmtSoles } from '@/shared/lib/format';
 import type { Pago, PagoEstado } from '@/modules/pagos/types';
 
 const TABS: { key: 'todos' | PagoEstado; label: string }[] = [
@@ -16,10 +18,10 @@ const TABS: { key: 'todos' | PagoEstado; label: string }[] = [
 ];
 
 export default function MisPagosPage() {
-  // Mientras Persona A no integre auth, usamos mocks.
-  // El endpoint real es GET /api/v1/portal/mis-pagos (auth con DNI+PIN).
   const { data: pagos, isLoading } = useMisPagos();
   const [filterTab, setFilterTab] = useState<(typeof TABS)[number]['key']>('todos');
+  const [pagarPago, setPagarPago] = useState<Pago | null>(null);
+  const [comprobantePago, setComprobantePago] = useState<Pago | null>(null);
 
   const stats = useMemo(() => calcStats(pagos), [pagos]);
   const filtered = filterTab === 'todos'
@@ -33,18 +35,26 @@ export default function MisPagosPage() {
   return (
     <div className="flex flex-col gap-5">
       {/* HERO */}
-      {proximo && <HeroProximoPago pago={proximo} />}
+      {proximo && (
+        <HeroProximoPago pago={proximo} onPagar={() => setPagarPago(proximo)} />
+      )}
 
       {/* KPIs */}
       <div className="flex gap-4">
         <KpiCard label="Total pagado" value={fmtSoles(stats.pagado)} icon="Wallet" iconColor="text-success" hint={`${stats.cntPagados} pagos completados`} />
         <KpiCard label="Pendiente" value={fmtSoles(stats.pendiente)} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPendientes} pagos pendientes`} />
         <KpiCard label="Vencido" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={stats.cntVencidos === 0 ? 'Sin pagos vencidos' : `${stats.cntVencidos} vencidos`} />
-        <KpiCard label="Próximo vence" value={proximo ? `${diasHasta(proximo.fecha_vencimiento)} días` : '—'} icon="Calendar" iconColor="text-info" hint={proximo?.fecha_vencimiento} />
+        <KpiCard
+          label="Próximo vence"
+          value={proximo ? `${diasHasta(proximo.fecha_vencimiento)} días` : '—'}
+          icon="Calendar"
+          iconColor="text-info"
+          hint={proximo ? fmtFecha(proximo.fecha_vencimiento) : ''}
+        />
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2 p-1.5 bg-bg-card rounded-md border border-border">
           {TABS.map((t) => (
             <button
@@ -72,9 +82,9 @@ export default function MisPagosPage() {
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Tabla — columnas con gap real para no apretar Estado y Acciones */}
       <div className="bg-bg-card border border-border rounded-md overflow-hidden">
-        <div className="grid grid-cols-[1fr_140px_110px_120px_160px] px-5 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
+        <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
           <span>CONCEPTO</span>
           <span>VENCIMIENTO</span>
           <span>MONTO</span>
@@ -82,21 +92,30 @@ export default function MisPagosPage() {
           <span>ACCIONES</span>
         </div>
         {filtered.map((pago) => (
-          <PagoRow key={pago.id} pago={pago} />
+          <PagoRow
+            key={pago.id}
+            pago={pago}
+            onPagar={() => setPagarPago(pago)}
+            onVerComprobante={() => setComprobantePago(pago)}
+          />
         ))}
         {filtered.length === 0 && (
           <p className="p-8 text-center text-text-secondary">No hay pagos en esta categoría.</p>
         )}
       </div>
+
+      {/* Modales */}
+      <PagarAhoraModal pago={pagarPago} onClose={() => setPagarPago(null)} />
+      <VerComprobanteModal pago={comprobantePago} onClose={() => setComprobantePago(null)} />
     </div>
   );
 }
 
 /* ─── Componentes locales ─── */
 
-function HeroProximoPago({ pago }: { pago: Pago }) {
+function HeroProximoPago({ pago, onPagar }: { pago: Pago; onPagar: () => void }) {
   return (
-    <div className="bg-trilce-primary text-text-on-primary rounded-lg p-8 flex items-center justify-between">
+    <div className="bg-trilce-primary text-text-on-primary rounded-lg p-8 flex items-center justify-between flex-wrap gap-4">
       <div className="flex flex-col gap-2">
         <span className="text-[11px] font-bold tracking-widest bg-trilce-primary-dark px-2.5 py-1 rounded-sm self-start">
           PAGO PRÓXIMO
@@ -108,7 +127,7 @@ function HeroProximoPago({ pago }: { pago: Pago }) {
       </div>
       <div className="flex flex-col items-end gap-3">
         <span className="text-4xl font-bold">{fmtSoles(pago.monto)}</span>
-        <Button variant="on-dark">
+        <Button variant="on-dark" onClick={onPagar}>
           Pagar ahora <Icon name="ArrowRight" size={16} />
         </Button>
       </div>
@@ -116,22 +135,40 @@ function HeroProximoPago({ pago }: { pago: Pago }) {
   );
 }
 
-function PagoRow({ pago }: { pago: Pago }) {
+function PagoRow({
+  pago, onPagar, onVerComprobante,
+}: {
+  pago: Pago;
+  onPagar: () => void;
+  onVerComprobante: () => void;
+}) {
   const isPendiente = pago.estado === 'pendiente';
   return (
-    <div className="grid grid-cols-[1fr_140px_110px_120px_160px] px-5 py-4 border-b border-border items-center text-[13px]">
+    <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 border-b border-border items-center text-[13px]">
       <span className="font-semibold text-text-primary">{pago.descripcion}</span>
       <span className="text-text-secondary">{fmtFecha(pago.fecha_vencimiento)}</span>
       <span className="font-semibold text-text-primary">{fmtSoles(pago.monto)}</span>
       <EstadoBadge estado={pago.estado} />
-      <div>
-        {isPendiente ? (
-          <Button variant="primary" className="!px-4 !py-1.5 text-xs">Pagar ahora</Button>
-        ) : pago.estado === 'pagado' ? (
-          <button className="text-trilce-primary font-semibold hover:underline">Ver comprobante</button>
-        ) : (
-          <span className="text-text-secondary">—</span>
+      <div className="flex">
+        {isPendiente && (
+          <Button variant="primary" className="!px-4 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
+            Pagar ahora
+          </Button>
         )}
+        {pago.estado === 'pagado' && (
+          <button
+            onClick={onVerComprobante}
+            className="text-trilce-primary font-semibold hover:underline whitespace-nowrap"
+          >
+            Ver comprobante
+          </button>
+        )}
+        {pago.estado === 'vencido' && (
+          <Button variant="danger" className="!px-4 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
+            Regularizar
+          </Button>
+        )}
+        {pago.estado === 'anulado' && <span className="text-text-muted">—</span>}
       </div>
     </div>
   );
@@ -145,7 +182,107 @@ function EstadoBadge({ estado }: { estado: PagoEstado }) {
     anulado:   { v: 'neutral' as const, label: 'Anulado' },
   };
   const cfg = map[estado];
-  return <Badge variant={cfg.v}>{cfg.label}</Badge>;
+  return <span><Badge variant={cfg.v}>{cfg.label}</Badge></span>;
+}
+
+/* ─── Modales ─── */
+
+function PagarAhoraModal({ pago, onClose }: { pago: Pago | null; onClose: () => void }) {
+  return (
+    <Modal
+      open={pago !== null}
+      onClose={onClose}
+      title="Información de pago"
+      subtitle={pago ? `${pago.descripcion} — ${fmtSoles(pago.monto)}` : undefined}
+      width={520}
+      footer={<Button variant="primary" onClick={onClose}>Entendido</Button>}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3 p-4 bg-trilce-primary-soft rounded-sm">
+          <Icon name="TriangleAlert" size={18} className="text-trilce-primary" />
+          <p className="text-sm text-text-primary">
+            Los pagos online aún <b>no están habilitados</b> en GOSTUDY. Acércate a tesorería del colegio
+            o usa los siguientes métodos:
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <MetodoPagoRow icon="Banknote" titulo="Efectivo en tesorería" desc="Lun a Vie 8:00-15:00 · Sáb 8:00-12:00" />
+          <MetodoPagoRow icon="Building2" titulo="Transferencia BCP" desc="Cta. Cte. Soles · 191-XXXXXXXX-X-XX · Trilce SA" />
+          <MetodoPagoRow icon="Smartphone" titulo="Yape o Plin" desc="Al número 999 444 777 · Mensaje: DNI del alumno" />
+        </div>
+
+        <p className="text-xs text-text-secondary">
+          Una vez realizado el pago, envía el comprobante al correo
+          <span className="font-semibold"> tesoreria@trilce.edu.pe </span>
+          y será registrado en este portal en 24 horas.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+function MetodoPagoRow({ icon, titulo, desc }: { icon: 'Banknote' | 'Building2' | 'Smartphone'; titulo: string; desc: string }) {
+  return (
+    <div className="flex items-center gap-3 p-3 bg-bg-muted rounded-sm">
+      <div className="w-9 h-9 rounded-sm bg-bg-card flex items-center justify-center border border-border">
+        <Icon name={icon} size={18} className="text-trilce-primary" />
+      </div>
+      <div className="flex flex-col">
+        <span className="text-sm font-semibold text-text-primary">{titulo}</span>
+        <span className="text-xs text-text-secondary">{desc}</span>
+      </div>
+    </div>
+  );
+}
+
+function VerComprobanteModal({ pago, onClose }: { pago: Pago | null; onClose: () => void }) {
+  return (
+    <Modal
+      open={pago !== null}
+      onClose={onClose}
+      title="Comprobante de pago"
+      subtitle={pago ? `${pago.descripcion} — ${fmtSoles(pago.monto)}` : undefined}
+      width={500}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cerrar</Button>
+          <Button variant="primary">
+            <Icon name="Download" size={16} /> Descargar PDF
+          </Button>
+        </>
+      }
+    >
+      {pago && (
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <DataField label="Concepto" value={pago.descripcion} />
+            <DataField label="Monto" value={fmtSoles(pago.monto)} />
+            <DataField label="Fecha de pago" value={pago.fecha_pago ? fmtFecha(pago.fecha_pago) : '—'} />
+            <DataField label="Método" value={pago.metodo ? capitalize(pago.metodo) : '—'} />
+          </div>
+          <div className="border-2 border-dashed border-border rounded-sm p-10 flex flex-col items-center justify-center gap-2 bg-bg-muted">
+            <Icon name="FileText" size={36} className="text-text-muted" />
+            <span className="text-xs text-text-muted">Vista previa del comprobante</span>
+            <span className="text-[11px] text-text-muted">(simulado mientras integramos auth)</span>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function DataField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[11px] font-bold tracking-wide text-text-muted">{label.toUpperCase()}</span>
+      <span className="text-sm font-semibold text-text-primary">{value}</span>
+    </div>
+  );
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /* ─── helpers ─── */
@@ -159,19 +296,4 @@ function calcStats(pagos: Pago[]) {
     cntPendientes: pagos.filter(p => p.estado === 'pendiente').length,
     cntVencidos:   pagos.filter(p => p.estado === 'vencido').length,
   };
-}
-
-function fmtSoles(n: number) {
-  return `S/ ${n.toFixed(2)}`;
-}
-
-function fmtFecha(iso: string) {
-  const d = new Date(iso);
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function diasHasta(iso: string) {
-  const ms = new Date(iso).getTime() - Date.now();
-  return Math.max(0, Math.ceil(ms / 86400000));
 }

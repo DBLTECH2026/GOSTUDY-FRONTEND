@@ -5,6 +5,7 @@ import { useEstadoCuenta } from '@/modules/pagos/api';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
+import { fmtFecha, fmtSoles } from '@/shared/lib/format';
 
 export default function EstadoCuentaPage({
   params,
@@ -39,7 +40,7 @@ export default function EstadoCuentaPage({
           </Button>
         </div>
         <div className="flex gap-8 pt-2 border-t border-white/10">
-          <Stat value={`S/ ${totales.pagado.toLocaleString('es-PE')}`} label="PAGADO" tone="success" />
+          <Stat value={fmtSoles(totales.pagado)} label="PAGADO" tone="success" />
           <Stat value={`S/ ${totales.pendiente.toLocaleString('es-PE')}`} label="PENDIENTE" tone="warning" />
           <Stat value={`S/ ${totales.vencido.toLocaleString('es-PE')}`} label="VENCIDO" tone="danger" />
           <Stat value={`${totales.cobranza_porcentaje}%`} label="COBRANZA" tone="primary" />
@@ -113,8 +114,3 @@ function Stat({ value, label, tone }: { value: string; label: string; tone: 'suc
   );
 }
 
-function fmtFecha(iso: string) {
-  const d = new Date(iso);
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]} ${d.getFullYear()}`;
-}
