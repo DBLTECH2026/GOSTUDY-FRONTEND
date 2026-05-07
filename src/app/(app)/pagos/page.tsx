@@ -7,6 +7,7 @@ import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { KpiCard } from '@/shared/components/KpiCard';
+import { fmtFecha, fmtSoles } from '@/shared/lib/format';
 
 export default function PagosAdminPage() {
   const [tab, setTab] = useState<'todos' | 'pendiente' | 'pagado' | 'vencido'>('todos');
@@ -24,29 +25,35 @@ export default function PagosAdminPage() {
     };
   }, [pagos]);
 
+  // Selecciona automáticamente el primer pago pendiente cuando admin clickea "Registrar pago" en el hero
+  const pickFirstPendiente = () => {
+    const p = pagos.find((p) => p.estado === 'pendiente' || p.estado === 'vencido');
+    if (p) setModalPago(p);
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {/* Hero strip oscuro */}
-      <section className="bg-trilce-accent text-white rounded-lg px-10 py-7 flex items-center justify-between">
+      <section className="bg-trilce-accent text-white rounded-lg px-10 py-7 flex items-center justify-between flex-wrap gap-4">
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-bold tracking-widest bg-trilce-primary px-2.5 py-1 rounded-sm self-start">
             PERIODO 2026-I
           </span>
           <h2 className="text-2xl font-bold">Recaudación al {fmtFechaCorta(new Date())}</h2>
           <p className="text-sm text-white/60">
-            S/ {stats.recaudado.toLocaleString('es-PE')} cobrados de S/ {(stats.recaudado + stats.pendiente + stats.vencido).toLocaleString('es-PE')} facturados
+            {fmtSoles(stats.recaudado)} cobrados de {fmtSoles(stats.recaudado + stats.pendiente + stats.vencido)} facturados
           </p>
         </div>
-        <Button variant="primary">
+        <Button variant="primary" onClick={pickFirstPendiente}>
           <Icon name="Plus" size={16} /> Registrar pago
         </Button>
       </section>
 
       {/* KPIs */}
-      <div className="flex gap-4">
-        <KpiCard label="Recaudado" value={`S/ ${stats.recaudado.toLocaleString('es-PE')}`} icon="Wallet" iconColor="text-success" />
-        <KpiCard label="Pendiente" value={`S/ ${stats.pendiente.toLocaleString('es-PE')}`} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPend} pagos pendientes`} />
-        <KpiCard label="Vencidos" value={`S/ ${stats.vencido.toLocaleString('es-PE')}`} icon="TriangleAlert" iconColor="text-danger" hint={`${stats.cntVenc} alumnos con mora`} />
+      <div className="flex gap-4 flex-wrap">
+        <KpiCard label="Recaudado" value={fmtSoles(stats.recaudado)} icon="Wallet" iconColor="text-success" />
+        <KpiCard label="Pendiente" value={fmtSoles(stats.pendiente)} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPend} pagos pendientes`} />
+        <KpiCard label="Vencidos" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={`${stats.cntVenc} alumnos con mora`} />
         <KpiCard label="Cobrado este mes" value="S/ 45,200" icon="Calendar" iconColor="text-info" hint="Mayo 2026" />
       </div>
 
@@ -78,7 +85,7 @@ export default function PagosAdminPage() {
 
       {/* Tabla */}
       <div className="bg-bg-card border border-border rounded-md overflow-hidden">
-        <div className="grid grid-cols-[1fr_140px_110px_130px_170px] px-5 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
+        <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
           <span>ALUMNO / CONCEPTO</span>
           <span>VENCIMIENTO</span>
           <span>MONTO</span>
@@ -110,21 +117,21 @@ function PagoRow({ pago, onRegistrar }: { pago: PagoListItem; onRegistrar: () =>
   }[pago.estado];
 
   return (
-    <div className="grid grid-cols-[1fr_140px_110px_130px_170px] px-5 py-4 border-b border-border items-center text-[13px]">
-      <div className="flex flex-col gap-0.5">
-        <span className="font-semibold text-text-primary">
+    <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 border-b border-border items-center text-[13px]">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="font-semibold text-text-primary truncate">
           {pago.alumno ? `${pago.alumno.nombres} ${pago.alumno.apellidos} · ${pago.alumno.grado} — ${pago.alumno.seccion}` : `Pago #${pago.id}`}
         </span>
-        <span className={`text-[11px] ${pago.estado === 'vencido' ? 'text-danger' : 'text-text-muted'}`}>
+        <span className={`text-[11px] truncate ${pago.estado === 'vencido' ? 'text-danger' : 'text-text-muted'}`}>
           {pago.descripcion}
         </span>
       </div>
       <span className={pago.estado === 'vencido' ? 'text-danger' : 'text-text-secondary'}>
         {fmtFecha(pago.fecha_vencimiento)}
       </span>
-      <span className="font-semibold text-text-primary">S/ {pago.monto.toFixed(2)}</span>
-      <Badge variant={estadoCfg.v}>{estadoCfg.label}</Badge>
-      <div>
+      <span className="font-semibold text-text-primary">{fmtSoles(pago.monto)}</span>
+      <span><Badge variant={estadoCfg.v}>{estadoCfg.label}</Badge></span>
+      <div className="flex">
         {pago.estado === 'pendiente' && (
           <Button variant="primary" className="!px-4 !py-1.5 text-xs" onClick={onRegistrar}>
             Registrar pago
@@ -257,11 +264,6 @@ function RegistrarPagoModal({ pago, onClose }: { pago: PagoListItem; onClose: ()
   );
 }
 
-function fmtFecha(iso: string) {
-  const d = new Date(iso);
-  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]} ${d.getFullYear()}`;
-}
 function fmtFechaCorta(d: Date) {
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   return `${String(d.getDate()).padStart(2, '0')} de ${meses[d.getMonth()]}`;
