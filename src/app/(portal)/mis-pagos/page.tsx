@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMisPagos } from '@/modules/pagos/api';
+import { PagarOnlineModal } from '@/modules/pagos/components/PagarOnlineModal';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
@@ -18,7 +19,7 @@ const TABS: { key: 'todos' | PagoEstado; label: string }[] = [
 ];
 
 export default function MisPagosPage() {
-  const { data: pagos, isLoading } = useMisPagos();
+  const { data: pagos, isLoading, marcarPagado } = useMisPagos();
   const [filterTab, setFilterTab] = useState<(typeof TABS)[number]['key']>('todos');
   const [search, setSearch] = useState('');
   const [year, setYear] = useState<number | null>(null);
@@ -140,7 +141,11 @@ export default function MisPagosPage() {
       </div>
 
       {/* Modales */}
-      <PagarAhoraModal pago={pagarPago} onClose={() => setPagarPago(null)} />
+      <PagarOnlineModal
+        pago={pagarPago}
+        onClose={() => setPagarPago(null)}
+        onPagoCompleto={(id, metodo) => marcarPagado(id, metodo)}
+      />
       <VerComprobanteModal pago={comprobantePago} onClose={() => setComprobantePago(null)} />
     </div>
   );
@@ -221,55 +226,6 @@ function EstadoBadge({ estado }: { estado: PagoEstado }) {
 }
 
 /* ─── Modales ─── */
-
-function PagarAhoraModal({ pago, onClose }: { pago: Pago | null; onClose: () => void }) {
-  return (
-    <Modal
-      open={pago !== null}
-      onClose={onClose}
-      title="Información de pago"
-      subtitle={pago ? `${pago.descripcion} — ${fmtSoles(pago.monto)}` : undefined}
-      width={520}
-      footer={<Button variant="primary" onClick={onClose}>Entendido</Button>}
-    >
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3 p-4 bg-trilce-primary-soft rounded-sm">
-          <Icon name="TriangleAlert" size={18} className="text-trilce-primary" />
-          <p className="text-sm text-text-primary">
-            Los pagos online aún <b>no están habilitados</b> en GOSTUDY. Acércate a tesorería del colegio
-            o usa los siguientes métodos:
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <MetodoPagoRow icon="Banknote" titulo="Efectivo en tesorería" desc="Lun a Vie 8:00-15:00 · Sáb 8:00-12:00" />
-          <MetodoPagoRow icon="Building2" titulo="Transferencia BCP" desc="Cta. Cte. Soles · 191-XXXXXXXX-X-XX · Trilce SA" />
-          <MetodoPagoRow icon="Smartphone" titulo="Yape o Plin" desc="Al número 999 444 777 · Mensaje: DNI del alumno" />
-        </div>
-
-        <p className="text-xs text-text-secondary">
-          Una vez realizado el pago, envía el comprobante al correo
-          <span className="font-semibold"> tesoreria@trilce.edu.pe </span>
-          y será registrado en este portal en 24 horas.
-        </p>
-      </div>
-    </Modal>
-  );
-}
-
-function MetodoPagoRow({ icon, titulo, desc }: { icon: 'Banknote' | 'Building2' | 'Smartphone'; titulo: string; desc: string }) {
-  return (
-    <div className="flex items-center gap-3 p-3 bg-bg-muted rounded-sm">
-      <div className="w-9 h-9 rounded-sm bg-bg-card flex items-center justify-center border border-border">
-        <Icon name={icon} size={18} className="text-trilce-primary" />
-      </div>
-      <div className="flex flex-col">
-        <span className="text-sm font-semibold text-text-primary">{titulo}</span>
-        <span className="text-xs text-text-secondary">{desc}</span>
-      </div>
-    </div>
-  );
-}
 
 function VerComprobanteModal({ pago, onClose }: { pago: Pago | null; onClose: () => void }) {
   return (
