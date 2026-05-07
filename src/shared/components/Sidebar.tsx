@@ -8,21 +8,66 @@ import { Icon, IconName } from './Icon';
 type SidebarProps = {
   scope: 'admin' | 'portal';
   role: Role;
+  /** Si true, se muestra como drawer en mobile (oculto por defecto). */
+  open?: boolean;
+  onClose?: () => void;
 };
 
-export function Sidebar({ scope, role }: SidebarProps) {
+export function Sidebar({ scope, role, open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const items = getSidebarItems(role, scope);
 
-  if (scope === 'portal') {
-    return <PortalSidebar items={items} pathname={pathname} />;
-  }
-  return <AdminSidebar items={items} pathname={pathname} />;
+  const isPortal = scope === 'portal';
+
+  return (
+    <>
+      {/* Overlay en mobile cuando está abierto */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={onClose}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-40 flex w-60 flex-col gap-1.5 p-6
+          transition-transform duration-200 lg:static lg:translate-x-0
+          ${open ? 'translate-x-0' : '-translate-x-full'}
+          ${isPortal
+            ? 'bg-bg-card border-r border-border'
+            : 'bg-trilce-accent text-white'}
+        `}
+      >
+        {/* Botón cerrar visible solo en mobile cuando está abierto */}
+        <button
+          onClick={onClose}
+          className={`absolute top-4 right-4 lg:hidden ${isPortal ? 'text-text-muted hover:text-text-secondary' : 'text-white/60 hover:text-white'}`}
+          aria-label="Cerrar menú"
+        >
+          <Icon name="X" size={20} />
+        </button>
+
+        {isPortal ? (
+          <PortalContents items={items} pathname={pathname} onNavigate={onClose} />
+        ) : (
+          <AdminContents items={items} pathname={pathname} onNavigate={onClose} />
+        )}
+      </aside>
+    </>
+  );
 }
 
-function PortalSidebar({ items, pathname }: { items: SidebarItem[]; pathname: string }) {
+function PortalContents({
+  items, pathname, onNavigate,
+}: {
+  items: SidebarItem[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   return (
-    <aside className="w-60 bg-bg-card border-r border-border p-6 flex flex-col gap-1.5">
+    <>
       <div className="flex items-center gap-2.5 px-3 py-2">
         <div className="w-8 h-8 rounded-md bg-trilce-primary flex items-center justify-center text-text-on-primary font-bold text-lg">
           T
@@ -38,6 +83,7 @@ function PortalSidebar({ items, pathname }: { items: SidebarItem[]; pathname: st
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-3 rounded-sm text-sm transition-colors ${
               active
                 ? 'bg-trilce-primary-light text-trilce-primary-dark font-semibold'
@@ -53,13 +99,19 @@ function PortalSidebar({ items, pathname }: { items: SidebarItem[]; pathname: st
           </Link>
         );
       })}
-    </aside>
+    </>
   );
 }
 
-function AdminSidebar({ items, pathname }: { items: SidebarItem[]; pathname: string }) {
+function AdminContents({
+  items, pathname, onNavigate,
+}: {
+  items: SidebarItem[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   return (
-    <aside className="w-60 bg-trilce-accent text-white p-6 flex flex-col gap-1.5">
+    <>
       <div className="flex items-center gap-2.5 px-3 py-2 mb-2">
         <div className="w-8 h-8 rounded-md bg-trilce-primary flex items-center justify-center text-text-on-primary font-bold text-lg">
           T
@@ -75,6 +127,7 @@ function AdminSidebar({ items, pathname }: { items: SidebarItem[]; pathname: str
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-3 rounded-sm text-sm transition-colors ${
               active
                 ? 'bg-trilce-primary text-white font-semibold'
@@ -86,6 +139,6 @@ function AdminSidebar({ items, pathname }: { items: SidebarItem[]; pathname: str
           </Link>
         );
       })}
-    </aside>
+    </>
   );
 }

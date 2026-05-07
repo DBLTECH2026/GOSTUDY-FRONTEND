@@ -69,7 +69,7 @@ export default function MisPagosPage() {
       )}
 
       {/* KPIs */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="Total pagado" value={fmtSoles(stats.pagado)} icon="Wallet" iconColor="text-success" hint={`${stats.cntPagados} pagos completados`} />
         <KpiCard label="Pendiente" value={fmtSoles(stats.pendiente)} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPendientes} pagos pendientes`} />
         <KpiCard label="Vencido" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={stats.cntVencidos === 0 ? 'Sin pagos vencidos' : `${stats.cntVencidos} vencidos`} />
@@ -83,13 +83,13 @@ export default function MisPagosPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2 p-1.5 bg-bg-card rounded-md border border-border">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 p-1.5 bg-bg-card rounded-md border border-border overflow-x-auto">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => setFilterTab(t.key)}
-              className={`px-4 py-2 rounded-sm text-[13px] transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-sm text-[13px] whitespace-nowrap transition-colors ${
                 filterTab === t.key
                   ? 'bg-trilce-primary text-text-on-primary font-semibold'
                   : 'text-text-secondary hover:bg-bg-muted'
@@ -99,24 +99,24 @@ export default function MisPagosPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border w-60 focus-within:border-trilce-primary transition-colors">
-            <Icon name="Search" size={16} className="text-text-muted" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border flex-1 lg:w-60 lg:flex-none focus-within:border-trilce-primary transition-colors">
+            <Icon name="Search" size={16} className="text-text-muted flex-shrink-0" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar pago…"
-              className="flex-1 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
+              className="flex-1 min-w-0 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
             />
           </label>
           <YearSelect years={availableYears} value={year} onChange={setYear} />
         </div>
       </div>
 
-      {/* Tabla — columnas con gap real para no apretar Estado y Acciones */}
+      {/* Tabla — header solo en md+, filas se vuelven cards en mobile */}
       <div className="bg-bg-card border border-border rounded-md overflow-hidden">
-        <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
+        <div className="hidden md:grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
           <span>CONCEPTO</span>
           <span>VENCIMIENTO</span>
           <span>MONTO</span>
@@ -155,18 +155,18 @@ export default function MisPagosPage() {
 
 function HeroProximoPago({ pago, onPagar }: { pago: Pago; onPagar: () => void }) {
   return (
-    <div className="bg-trilce-primary text-text-on-primary rounded-lg p-8 flex items-center justify-between flex-wrap gap-4">
+    <div className="bg-trilce-primary text-text-on-primary rounded-lg p-5 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div className="flex flex-col gap-2">
         <span className="text-[11px] font-bold tracking-widest bg-trilce-primary-dark px-2.5 py-1 rounded-sm self-start">
           PAGO PRÓXIMO
         </span>
-        <h2 className="text-2xl font-bold">Tienes 1 pago próximo a vencer</h2>
-        <p className="text-sm text-trilce-primary-light">
+        <h2 className="text-xl sm:text-2xl font-bold">Tienes 1 pago próximo a vencer</h2>
+        <p className="text-xs sm:text-sm text-trilce-primary-light">
           {pago.descripcion} — vence el {fmtFecha(pago.fecha_vencimiento)}
         </p>
       </div>
-      <div className="flex flex-col items-end gap-3">
-        <span className="text-4xl font-bold">{fmtSoles(pago.monto)}</span>
+      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3 md:gap-3">
+        <span className="text-3xl sm:text-4xl font-bold">{fmtSoles(pago.monto)}</span>
         <Button variant="on-dark" onClick={onPagar}>
           Pagar ahora <Icon name="ArrowRight" size={16} />
         </Button>
@@ -184,12 +184,26 @@ function PagoRow({
 }) {
   const isPendiente = pago.estado === 'pendiente';
   return (
-    <div className="grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 border-b border-border items-center text-[13px]">
-      <span className="font-semibold text-text-primary">{pago.descripcion}</span>
-      <span className="text-text-secondary">{fmtFecha(pago.fecha_vencimiento)}</span>
-      <span className="font-semibold text-text-primary">{fmtSoles(pago.monto)}</span>
-      <EstadoBadge estado={pago.estado} />
-      <div className="flex">
+    <div className="
+      grid grid-cols-2 md:grid-cols-[1fr_150px_120px_140px_180px]
+      gap-x-3 gap-y-2 md:gap-6
+      px-4 sm:px-6 py-4 border-b border-border md:items-center text-[13px]
+    ">
+      <span className="col-span-2 md:col-span-1 font-semibold text-text-primary">
+        {pago.descripcion}
+      </span>
+      <span className="text-text-secondary order-2 md:order-none">
+        <span className="md:hidden text-text-muted text-[11px] mr-1">Vence:</span>
+        {fmtFecha(pago.fecha_vencimiento)}
+      </span>
+      <span className="font-semibold text-text-primary text-right md:text-left order-1 md:order-none">
+        <span className="md:hidden text-text-muted text-[11px] mr-1 font-normal">Monto:</span>
+        {fmtSoles(pago.monto)}
+      </span>
+      <span className="order-3 md:order-none">
+        <EstadoBadge estado={pago.estado} />
+      </span>
+      <div className="flex justify-end md:justify-start order-4 md:order-none">
         {isPendiente && (
           <Button variant="primary" className="!px-4 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
             Pagar ahora

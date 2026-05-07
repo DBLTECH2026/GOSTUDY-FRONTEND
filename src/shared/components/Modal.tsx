@@ -30,12 +30,12 @@ export function Modal({ open, onClose, title, subtitle, children, footer, width 
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6"
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="bg-bg-card rounded-md max-h-[90vh] overflow-y-auto border border-border shadow-2xl"
-        style={{ width }}
+        className="bg-bg-card rounded-md max-h-[90vh] w-full overflow-y-auto border border-border shadow-2xl"
+        style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-border">

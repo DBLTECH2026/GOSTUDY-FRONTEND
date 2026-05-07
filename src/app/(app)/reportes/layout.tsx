@@ -14,14 +14,14 @@ export default function ReportesLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
     <div className="flex flex-col gap-5">
-      <nav className="flex items-center gap-1.5 p-1.5 bg-bg-card rounded-md border border-border w-fit">
+      <nav className="flex items-center gap-1 sm:gap-1.5 p-1.5 bg-bg-card rounded-md border border-border w-full lg:w-fit overflow-x-auto">
         {TABS.map((t) => {
           const active = pathname.startsWith(t.href);
           return (
             <Link
               key={t.href}
               href={t.href}
-              className={`px-4 py-2 rounded-sm text-[13px] transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-sm text-[13px] whitespace-nowrap transition-colors ${
                 active
                   ? 'bg-trilce-primary text-text-on-primary font-semibold'
                   : 'text-text-secondary hover:bg-bg-muted'
