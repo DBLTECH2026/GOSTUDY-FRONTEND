@@ -1,53 +1,66 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MI_MATRICULA_MOCK, MI_PERFIL_MOCK, MIS_CURSOS_MOCK } from './mocks';
+import { useAuth } from '@/modules/auth/AuthProvider';
+import { apiFetch } from '@/shared/lib/api';
 import type { CursoEnPortal, MiMatriculaResponse, MiPerfilResponse } from './types';
 
-const MOCK_DELAY_MS = 250;
-
-function fakeFetch<T>(value: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(value), MOCK_DELAY_MS));
-}
-
 export function useMiPerfil() {
+  const { token } = useAuth();
   const [data, setData] = useState<MiPerfilResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fakeFetch(MI_PERFIL_MOCK).then((d) => {
-      setData(d);
+    if (!token) {
       setIsLoading(false);
-    });
-  }, []);
+      return;
+    }
+    setIsLoading(true);
+    apiFetch<{ data: MiPerfilResponse }>('/portal/mi-perfil', { token })
+      .then((r) => setData(r.data))
+      .catch(() => setData(null))
+      .finally(() => setIsLoading(false));
+  }, [token]);
 
   return { data, isLoading };
 }
 
 export function useMiMatricula() {
+  const { token } = useAuth();
   const [data, setData] = useState<MiMatriculaResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fakeFetch(MI_MATRICULA_MOCK).then((d) => {
-      setData(d);
+    if (!token) {
       setIsLoading(false);
-    });
-  }, []);
+      return;
+    }
+    setIsLoading(true);
+    apiFetch<{ data: MiMatriculaResponse }>('/portal/mi-matricula', { token })
+      .then((r) => setData(r.data))
+      .catch(() => setData(null))
+      .finally(() => setIsLoading(false));
+  }, [token]);
 
   return { data, isLoading };
 }
 
 export function useMisCursos() {
+  const { token } = useAuth();
   const [data, setData] = useState<CursoEnPortal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fakeFetch(MIS_CURSOS_MOCK).then((d) => {
-      setData(d);
+    if (!token) {
       setIsLoading(false);
-    });
-  }, []);
+      return;
+    }
+    setIsLoading(true);
+    apiFetch<{ data: CursoEnPortal[] }>('/portal/mis-cursos', { token })
+      .then((r) => setData(r.data))
+      .catch(() => setData([]))
+      .finally(() => setIsLoading(false));
+  }, [token]);
 
   return { data, isLoading };
 }

@@ -3,16 +3,40 @@
 import { ReactNode, useState } from 'react';
 import { Sidebar } from '@/shared/components/Sidebar';
 import { Topbar } from '@/shared/components/Topbar';
+import { useAuthGuard } from '@/modules/auth/useAuthGuard';
+import { useAuth } from '@/modules/auth/AuthProvider';
+import { useRouter } from 'next/navigation';
+
+function initialsOf(nombres = '', apellidos = '') {
+  const a = nombres.trim().charAt(0);
+  const b = apellidos.trim().charAt(0);
+  return (a + b).toUpperCase() || 'ES';
+}
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, ready } = useAuthGuard('estudiante');
+  const { logout } = useAuth();
+  const router = useRouter();
 
-  // TODO: cuando Persona A tenga useAuthPortal, leer estudiante real
-  const estudiante = {
-    initials: 'JP',
-    name: 'Juan Carlos Pérez',
-    meta: '3ro Primaria — A',
+  if (!ready || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-text-secondary text-sm">
+        Cargando…
+      </div>
+    );
+  }
+
+  const headerUser = {
+    initials: initialsOf(user.nombres, user.apellidos),
+    name: user.nombre,
+    meta: user.codigo_estudiante ?? 'Estudiante',
   };
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/portal-login');
+  }
 
   return (
     <div className="min-h-screen flex bg-bg-page">
@@ -26,8 +50,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         <Topbar
           title="Mi Portal"
           subtitle="Bienvenido a tu portal estudiantil"
-          user={estudiante}
+          user={headerUser}
           onMenuClick={() => setSidebarOpen(true)}
+          onLogout={handleLogout}
         />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</main>
       </div>

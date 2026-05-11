@@ -8,9 +8,11 @@ type TopbarProps = {
   right?: ReactNode;
   /** Callback al tocar la hamburguesa en mobile. */
   onMenuClick?: () => void;
+  /** Si se pasa, muestra el botón "Salir". */
+  onLogout?: () => void;
 };
 
-export function Topbar({ title, subtitle, user, right, onMenuClick }: TopbarProps) {
+export function Topbar({ title, subtitle, user, right, onMenuClick, onLogout }: TopbarProps) {
   return (
     <header className="h-16 px-4 sm:px-6 py-4 flex items-center justify-between bg-bg-card border-b border-border gap-3">
       <div className="flex items-center gap-3 min-w-0">
@@ -50,6 +52,14 @@ export function Topbar({ title, subtitle, user, right, onMenuClick }: TopbarProp
               )}
             </div>
           </div>
+        )}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="text-xs font-semibold text-text-secondary hover:text-trilce-primary border border-border hover:border-trilce-primary rounded-sm px-3 py-1.5"
+          >
+            Salir
+          </button>
         )}
       </div>
     </header>

@@ -1,33 +1,41 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/modules/auth/AuthProvider';
 import { useMiPerfil } from '@/modules/portal/api';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { Modal } from '@/shared/components/Modal';
 
 export default function MiPerfilPage() {
-  const { data, isLoading } = useMiPerfil();
+  const { user } = useAuth();
+  const { data: perfil, isLoading } = useMiPerfil();
   const [openPIN, setOpenPIN] = useState(false);
 
-  if (isLoading || !data) return <p className="text-text-secondary">Cargando perfil…</p>;
-  const { estudiante, apoderados } = data;
+  if (!user || isLoading) return <p className="text-text-secondary">Cargando perfil…</p>;
 
-  const titularInitials =
-    `${estudiante.nombres.split(' ')[0][0]}${estudiante.apellidos.split(' ')[0][0]}`;
+  // El backend devuelve estudiante completo; si llega null usamos el del auth como fallback
+  const estudiante = perfil?.estudiante ?? user;
+  const apoderados = perfil?.apoderados ?? [];
+
+  const initials = `${user.nombres.charAt(0)}${user.apellidos.charAt(0)}`.toUpperCase();
 
   return (
     <div className="flex flex-col gap-5">
       {/* Hero perfil */}
       <div className="bg-trilce-primary text-text-on-primary rounded-lg p-5 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-trilce-primary-dark flex items-center justify-center text-3xl sm:text-4xl font-bold flex-shrink-0">
-          {titularInitials}
+          {initials}
         </div>
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold truncate">{estudiante.nombres} {estudiante.apellidos}</h1>
-          <p className="text-xs sm:text-sm text-trilce-primary-light mt-1">
-            Código {estudiante.codigo_estudiante}
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold truncate">
+            {user.nombres} {user.apellidos}
+          </h1>
+          {user.codigo_estudiante && (
+            <p className="text-xs sm:text-sm text-trilce-primary-light mt-1">
+              Código {user.codigo_estudiante}
+            </p>
+          )}
         </div>
       </div>
 
@@ -38,9 +46,12 @@ export default function MiPerfilPage() {
           <h2 className="text-base font-bold text-text-primary">Datos personales</h2>
         </header>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-          <Field label="DNI" value={estudiante.dni} />
-          <Field label="Fecha de nacimiento" value={estudiante.fecha_nacimiento} />
-          <Field label="Sexo" value={estudiante.sexo === 'M' ? 'Masculino' : 'Femenino'} />
+          <Field label="DNI" value={estudiante.dni ?? '—'} />
+          <Field label="Fecha de nacimiento" value={estudiante.fecha_nacimiento ?? '—'} />
+          <Field
+            label="Sexo"
+            value={estudiante.sexo === 'M' ? 'Masculino' : estudiante.sexo === 'F' ? 'Femenino' : '—'}
+          />
           <Field label="I.E. de procedencia" value={estudiante.ie_procedencia ?? '—'} />
           <Field label="Dirección" value={estudiante.direccion ?? '—'} />
           <Field label="Departamento" value={estudiante.departamento ?? '—'} />
@@ -53,22 +64,42 @@ export default function MiPerfilPage() {
       <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6 flex flex-col gap-3">
         <header className="flex items-center gap-2.5">
           <Icon name="Users" className="text-trilce-primary" />
-          <h2 className="text-base font-bold text-text-primary">Apoderados</h2>
+          <h2 className="text-base font-bold text-text-primary">
+            Apoderados ({apoderados.length})
+          </h2>
         </header>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {apoderados.map((a) => (
-            <article key={a.id} className="bg-bg-muted rounded-sm p-4 flex flex-col gap-1.5">
-              <span className="text-[10px] font-bold tracking-widest text-trilce-primary">
-                {a.tipo.toUpperCase()}
-              </span>
-              <span className="text-sm font-semibold text-text-primary">
-                {a.nombres} {a.apellidos ? a.apellidos : a.parentesco ? `(${a.parentesco})` : ''}
-              </span>
-              <span className="text-xs text-text-secondary">DNI {a.dni}</span>
-              <span className="text-xs text-text-secondary">{a.telefono ?? '—'}</span>
-            </article>
-          ))}
-        </div>
+        {apoderados.length === 0 ? (
+          <p className="text-sm text-text-secondary py-4 text-center">
+            Sin apoderados registrados. Los datos del apoderado se asocian durante el
+            proceso de inscripción aprobado por administración.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {apoderados.map((a) => (
+              <article
+                key={a.id}
+                className={`rounded-sm p-4 flex flex-col gap-1.5 ${
+                  a.es_titular
+                    ? 'bg-trilce-primary-soft border-2 border-trilce-primary'
+                    : 'bg-bg-muted'
+                }`}
+              >
+                <span className="text-[10px] font-bold tracking-widest text-trilce-primary">
+                  {a.tipo.toUpperCase()}
+                  {a.es_titular && ' · TITULAR'}
+                </span>
+                <span className="text-sm font-semibold text-text-primary">
+                  {a.nombres} {a.apellidos ?? ''}
+                </span>
+                <span className="text-xs text-text-secondary">DNI {a.dni ?? '—'}</span>
+                <span className="text-xs text-text-secondary">{a.telefono ?? '—'}</span>
+                {a.email && (
+                  <span className="text-xs text-text-secondary truncate">{a.email}</span>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cambiar PIN */}
@@ -79,7 +110,11 @@ export default function MiPerfilPage() {
             Modifica tu PIN de 6 dígitos para entrar al portal.
           </p>
         </div>
-        <Button variant="primary" onClick={() => setOpenPIN(true)} className="self-start sm:self-auto">
+        <Button
+          variant="primary"
+          onClick={() => setOpenPIN(true)}
+          className="self-start sm:self-auto"
+        >
           <Icon name="KeyRound" size={16} /> Cambiar PIN
         </Button>
       </div>
@@ -105,28 +140,19 @@ function CambiarPinModal({ open, onClose }: { open: boolean; onClose: () => void
   const [pinNuevo, setPinNuevo] = useState('');
   const [pinConfirma, setPinConfirma] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   function reset() {
-    setPinActual(''); setPinNuevo(''); setPinConfirma('');
-    setError(null); setSuccess(false);
+    setPinActual(''); setPinNuevo(''); setPinConfirma(''); setError(null);
   }
 
   function handleClose() { reset(); onClose(); }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     setError(null);
     if (!/^\d{6}$/.test(pinNuevo)) return setError('El PIN nuevo debe ser exactamente 6 dígitos.');
-    if (pinNuevo !== pinConfirma)   return setError('La confirmación no coincide.');
-    if (pinActual.length !== 6)     return setError('Ingresa tu PIN actual (6 dígitos).');
-
-    setBusy(true);
-    // TODO: cuando A tenga auth, llamar a POST /api/v1/portal/cambiar-pin
-    await new Promise((r) => setTimeout(r, 600));
-    setBusy(false);
-    setSuccess(true);
-    setTimeout(handleClose, 1500);
+    if (pinNuevo !== pinConfirma) return setError('La confirmación no coincide.');
+    if (pinActual.length !== 6) return setError('Ingresa tu PIN actual (6 dígitos).');
+    setError('Endpoint de cambio de PIN aún no implementado en el backend.');
   }
 
   return (
@@ -137,44 +163,36 @@ function CambiarPinModal({ open, onClose }: { open: boolean; onClose: () => void
       subtitle="6 dígitos numéricos"
       width={440}
       footer={
-        success ? (
-          <Button variant="primary" onClick={handleClose}>Listo</Button>
-        ) : (
-          <>
-            <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={busy}>
-              {busy ? 'Guardando…' : 'Guardar PIN'}
-            </Button>
-          </>
-        )
+        <>
+          <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
+          <Button variant="primary" onClick={handleSubmit}>Guardar PIN</Button>
+        </>
       }
     >
-      {success ? (
-        <div className="flex flex-col items-center gap-3 py-4">
-          <div className="w-12 h-12 rounded-full bg-success/15 flex items-center justify-center">
-            <Icon name="CircleCheck" size={28} className="text-success" />
+      <div className="flex flex-col gap-3">
+        <PinField label="PIN actual" value={pinActual} onChange={setPinActual} />
+        <PinField label="PIN nuevo" value={pinNuevo} onChange={setPinNuevo} />
+        <PinField label="Confirmar PIN nuevo" value={pinConfirma} onChange={setPinConfirma} />
+        {error && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-danger/10 rounded-sm">
+            <Icon name="TriangleAlert" size={14} className="text-danger" />
+            <span className="text-xs text-danger font-semibold">{error}</span>
           </div>
-          <p className="text-sm font-semibold text-text-primary">PIN actualizado</p>
-          <p className="text-xs text-text-secondary">Usa el nuevo PIN la próxima vez que ingreses.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <PinField label="PIN actual" value={pinActual} onChange={setPinActual} />
-          <PinField label="PIN nuevo" value={pinNuevo} onChange={setPinNuevo} />
-          <PinField label="Confirmar PIN nuevo" value={pinConfirma} onChange={setPinConfirma} />
-          {error && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-danger/10 rounded-sm">
-              <Icon name="TriangleAlert" size={14} className="text-danger" />
-              <span className="text-xs text-danger font-semibold">{error}</span>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </Modal>
   );
 }
 
-function PinField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function PinField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold text-text-secondary">{label}</span>

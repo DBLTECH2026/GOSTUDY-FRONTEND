@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMisPagos } from '@/modules/pagos/api';
-import { PagarOnlineModal } from '@/modules/pagos/components/PagarOnlineModal';
+import { SubirComprobanteModal } from '@/modules/pagos/components/SubirComprobanteModal';
 import { VerComprobanteModal } from '@/modules/pagos/components/VerComprobanteModal';
 import { Badge } from '@/shared/components/Badge';
 import { Button } from '@/shared/components/Button';
@@ -19,60 +19,40 @@ const TABS: { key: 'todos' | PagoEstado; label: string }[] = [
 ];
 
 export default function MisPagosPage() {
-  const { data: pagos, isLoading, marcarPagado } = useMisPagos();
+  const { data: pagos, isLoading, reload } = useMisPagos();
   const [filterTab, setFilterTab] = useState<(typeof TABS)[number]['key']>('todos');
-  const [search, setSearch] = useState('');
-  const [year, setYear] = useState<number | null>(null);
   const [pagarPago, setPagarPago] = useState<Pago | null>(null);
   const [comprobantePago, setComprobantePago] = useState<Pago | null>(null);
 
-  // Años disponibles según los datos. Se recalcula cuando cambian los pagos.
-  const availableYears = useMemo(() => {
-    const ys = new Set<number>();
-    for (const p of pagos) ys.add(parseInt(p.fecha_vencimiento.slice(0, 4), 10));
-    return Array.from(ys).sort((a, b) => b - a);
-  }, [pagos]);
-
-  // Default al año más reciente disponible una vez cargan los pagos.
-  useEffect(() => {
-    if (year === null && availableYears.length > 0) {
-      setYear(availableYears[0]);
-    }
-  }, [availableYears, year]);
-
-  const stats = useMemo(() => calcStats(filterByYear(pagos, year)), [pagos, year]);
-
-  // Filtrado: año → tab → búsqueda libre.
-  const filtered = useMemo(() => {
-    let out = filterByYear(pagos, year);
-    if (filterTab !== 'todos') out = out.filter((p) => p.estado === filterTab);
-    const q = search.trim().toLowerCase();
-    if (q) {
-      out = out.filter((p) =>
-        p.descripcion.toLowerCase().includes(q) ||
-        p.monto.toString().includes(q) ||
-        (p.metodo ?? '').includes(q),
-      );
-    }
-    return out;
-  }, [pagos, year, filterTab, search]);
-
-  const proximo = filterByYear(pagos, year).find((p) => p.estado === 'pendiente');
+  const stats = useMemo(() => calcStats(pagos), [pagos]);
+  const filtered = filterTab === 'todos' ? pagos : pagos.filter((p) => p.estado === filterTab);
+  const proximo = pagos.find((p) => p.estado === 'pendiente');
 
   if (isLoading) return <p className="text-text-secondary">Cargando pagos…</p>;
 
+  if (pagos.length === 0) {
+    return (
+      <div className="bg-bg-card border border-border rounded-md p-10 text-center">
+        <div className="w-16 h-16 mx-auto rounded-full bg-bg-muted flex items-center justify-center mb-4">
+          <Icon name="Wallet" size={28} className="text-text-muted" />
+        </div>
+        <h2 className="text-lg font-bold mb-1">No tienes pagos registrados</h2>
+        <p className="text-sm text-text-secondary max-w-md mx-auto">
+          Cuando administración apruebe tu matrícula, se generarán automáticamente
+          tu pago de matrícula y las 10 pensiones del periodo.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
-      {/* HERO */}
-      {proximo && (
-        <HeroProximoPago pago={proximo} onPagar={() => setPagarPago(proximo)} />
-      )}
+      {proximo && <HeroProximoPago pago={proximo} onPagar={() => setPagarPago(proximo)} />}
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="Total pagado" value={fmtSoles(stats.pagado)} icon="Wallet" iconColor="text-success" hint={`${stats.cntPagados} pagos completados`} />
         <KpiCard label="Pendiente" value={fmtSoles(stats.pendiente)} icon="Hourglass" iconColor="text-warning" hint={`${stats.cntPendientes} pagos pendientes`} />
-        <KpiCard label="Vencido" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={stats.cntVencidos === 0 ? 'Sin pagos vencidos' : `${stats.cntVencidos} vencidos`} />
+        <KpiCard label="Vencido" value={fmtSoles(stats.vencido)} icon="TriangleAlert" iconColor="text-danger" hint={stats.cntVencidos === 0 ? 'Sin vencidos' : `${stats.cntVencidos} vencidos`} />
         <KpiCard
           label="Próximo vence"
           value={proximo ? `${diasHasta(proximo.fecha_vencimiento)} días` : '—'}
@@ -83,40 +63,25 @@ export default function MisPagosPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div className="flex items-center gap-1 sm:gap-2 p-1.5 bg-bg-card rounded-md border border-border overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setFilterTab(t.key)}
-              className={`px-3 sm:px-4 py-2 rounded-sm text-[13px] whitespace-nowrap transition-colors ${
-                filterTab === t.key
-                  ? 'bg-trilce-primary text-text-on-primary font-semibold'
-                  : 'text-text-secondary hover:bg-bg-muted'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border flex-1 lg:w-60 lg:flex-none focus-within:border-trilce-primary transition-colors">
-            <Icon name="Search" size={16} className="text-text-muted flex-shrink-0" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar pago…"
-              className="flex-1 min-w-0 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted outline-none"
-            />
-          </label>
-          <YearSelect years={availableYears} value={year} onChange={setYear} />
-        </div>
+      <div className="flex items-center gap-1 sm:gap-2 p-1.5 bg-bg-card rounded-md border border-border overflow-x-auto w-fit">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setFilterTab(t.key)}
+            className={`px-3 sm:px-4 py-2 rounded-sm text-[13px] whitespace-nowrap transition-colors ${
+              filterTab === t.key
+                ? 'bg-trilce-primary text-text-on-primary font-semibold'
+                : 'text-text-secondary hover:bg-bg-muted'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Tabla — header solo en md+, filas se vuelven cards en mobile */}
+      {/* Tabla */}
       <div className="bg-bg-card border border-border rounded-md overflow-hidden">
-        <div className="hidden md:grid grid-cols-[1fr_150px_120px_140px_180px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
+        <div className="hidden md:grid grid-cols-[1fr_150px_120px_140px_200px] gap-6 px-6 py-4 bg-bg-muted border-b border-border text-[11px] font-bold tracking-widest text-text-muted">
           <span>CONCEPTO</span>
           <span>VENCIMIENTO</span>
           <span>MONTO</span>
@@ -132,26 +97,22 @@ export default function MisPagosPage() {
           />
         ))}
         {filtered.length === 0 && (
-          <p className="p-8 text-center text-text-secondary">
-            {search.trim()
-              ? `No hay resultados para "${search.trim()}".`
-              : 'No hay pagos en esta categoría.'}
-          </p>
+          <p className="p-8 text-center text-text-secondary">No hay pagos en esta categoría.</p>
         )}
       </div>
 
-      {/* Modales */}
-      <PagarOnlineModal
+      <SubirComprobanteModal
         pago={pagarPago}
         onClose={() => setPagarPago(null)}
-        onPagoCompleto={(id, metodo) => marcarPagado(id, metodo)}
+        onUploaded={reload}
       />
-      <VerComprobanteModal pago={comprobantePago} onClose={() => setComprobantePago(null)} />
+      <VerComprobanteModal
+        pago={comprobantePago}
+        onClose={() => setComprobantePago(null)}
+      />
     </div>
   );
 }
-
-/* ─── Componentes locales ─── */
 
 function HeroProximoPago({ pago, onPagar }: { pago: Pago; onPagar: () => void }) {
   return (
@@ -165,10 +126,10 @@ function HeroProximoPago({ pago, onPagar }: { pago: Pago; onPagar: () => void })
           {pago.descripcion} — vence el {fmtFecha(pago.fecha_vencimiento)}
         </p>
       </div>
-      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3 md:gap-3">
+      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start gap-3">
         <span className="text-3xl sm:text-4xl font-bold">{fmtSoles(pago.monto)}</span>
         <Button variant="on-dark" onClick={onPagar}>
-          Pagar ahora <Icon name="ArrowRight" size={16} />
+          Subir comprobante <Icon name="Upload" size={16} />
         </Button>
       </div>
     </div>
@@ -176,21 +137,25 @@ function HeroProximoPago({ pago, onPagar }: { pago: Pago; onPagar: () => void })
 }
 
 function PagoRow({
-  pago, onPagar, onVerComprobante,
+  pago,
+  onPagar,
+  onVerComprobante,
 }: {
   pago: Pago;
   onPagar: () => void;
   onVerComprobante: () => void;
 }) {
-  const isPendiente = pago.estado === 'pendiente';
+  const porVerificar = pago.estado === 'pendiente' && pago.comprobante_url !== null;
+
   return (
-    <div className="
-      grid grid-cols-2 md:grid-cols-[1fr_150px_120px_140px_180px]
-      gap-x-3 gap-y-2 md:gap-6
-      px-4 sm:px-6 py-4 border-b border-border md:items-center text-[13px]
-    ">
+    <div className="grid grid-cols-2 md:grid-cols-[1fr_150px_120px_140px_200px] gap-x-3 gap-y-2 md:gap-6 px-4 sm:px-6 py-4 border-b border-border md:items-center text-[13px]">
       <span className="col-span-2 md:col-span-1 font-semibold text-text-primary">
         {pago.descripcion}
+        {porVerificar && (
+          <span className="ml-2 text-[10px] font-bold tracking-widest text-info bg-info/10 px-1.5 py-0.5 rounded-sm">
+            POR VERIFICAR
+          </span>
+        )}
       </span>
       <span className="text-text-secondary order-2 md:order-none">
         <span className="md:hidden text-text-muted text-[11px] mr-1">Vence:</span>
@@ -201,34 +166,42 @@ function PagoRow({
         {fmtSoles(pago.monto)}
       </span>
       <span className="order-3 md:order-none">
-        <EstadoBadge estado={pago.estado} />
+        <EstadoBadge estado={pago.estado} porVerificar={porVerificar} />
       </span>
       <div className="flex justify-end md:justify-start order-4 md:order-none">
-        {isPendiente && (
-          <Button variant="primary" className="!px-4 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
-            Pagar ahora
-          </Button>
-        )}
         {pago.estado === 'pagado' && (
           <button
             onClick={onVerComprobante}
-            className="text-trilce-primary font-semibold hover:underline whitespace-nowrap"
+            className="text-trilce-primary font-semibold hover:underline whitespace-nowrap text-xs"
           >
             Ver comprobante
           </button>
         )}
-        {pago.estado === 'vencido' && (
-          <Button variant="danger" className="!px-4 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
-            Regularizar
+        {pago.estado === 'pendiente' && !porVerificar && (
+          <Button variant="primary" className="!px-3 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
+            <Icon name="Upload" size={13} /> Subir comprobante
           </Button>
         )}
-        {pago.estado === 'anulado' && <span className="text-text-muted">—</span>}
+        {pago.estado === 'pendiente' && porVerificar && (
+          <button
+            onClick={onVerComprobante}
+            className="text-info font-semibold hover:underline whitespace-nowrap text-xs"
+          >
+            Ver comprobante enviado
+          </button>
+        )}
+        {pago.estado === 'vencido' && (
+          <Button variant="danger" className="!px-3 !py-1.5 text-xs whitespace-nowrap" onClick={onPagar}>
+            <Icon name="Upload" size={13} /> Regularizar
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
-function EstadoBadge({ estado }: { estado: PagoEstado }) {
+function EstadoBadge({ estado, porVerificar }: { estado: PagoEstado; porVerificar?: boolean }) {
+  if (porVerificar) return <Badge variant="info">En revisión</Badge>;
   const map = {
     pagado:    { v: 'success' as const, label: 'Pagado' },
     pendiente: { v: 'warning' as const, label: 'Pendiente' },
@@ -236,74 +209,8 @@ function EstadoBadge({ estado }: { estado: PagoEstado }) {
     anulado:   { v: 'neutral' as const, label: 'Anulado' },
   };
   const cfg = map[estado];
-  return <span><Badge variant={cfg.v}>{cfg.label}</Badge></span>;
+  return <Badge variant={cfg.v}>{cfg.label}</Badge>;
 }
-
-/* ─── Filtros ─── */
-
-function YearSelect({
-  years, value, onChange,
-}: {
-  years: number[];
-  value: number | null;
-  onChange: (y: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onClick);
-    document.addEventListener('keydown', onEsc);
-    return () => {
-      document.removeEventListener('mousedown', onClick);
-      document.removeEventListener('keydown', onEsc);
-    };
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-bg-card rounded-md border border-border hover:border-trilce-primary transition-colors"
-      >
-        <span className="text-[13px] font-semibold text-text-primary">{value ?? '—'}</span>
-        <Icon name="ChevronDown" size={16} className={`text-text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <ul className="absolute right-0 top-full mt-1.5 min-w-[100px] bg-bg-card border border-border rounded-md shadow-lg overflow-hidden z-10">
-          {years.map((y) => (
-            <li key={y}>
-              <button
-                type="button"
-                onClick={() => { onChange(y); setOpen(false); }}
-                className={`w-full text-left px-4 py-2 text-[13px] transition-colors ${
-                  value === y
-                    ? 'bg-trilce-primary-soft text-trilce-primary-dark font-semibold'
-                    : 'text-text-secondary hover:bg-bg-muted'
-                }`}
-              >
-                {y}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function filterByYear(pagos: Pago[], year: number | null): Pago[] {
-  if (year === null) return pagos;
-  return pagos.filter((p) => p.fecha_vencimiento.startsWith(String(year)));
-}
-
-/* ─── helpers ─── */
 
 function calcStats(pagos: Pago[]) {
   return {

@@ -21,12 +21,14 @@ const APODERADOS: Apoderado[] = [
     id: 1, estudiante_id: 1, tipo: 'padre',
     nombres: 'Roberto', apellidos: 'Pérez Mendoza',
     dni: '45125187', telefono: '+51 999 444 777',
+    email: null,
     vive_con: true, es_titular: true,
   },
   {
     id: 2, estudiante_id: 1, tipo: 'madre',
     nombres: 'Lucía', apellidos: 'Quiroz Rojas',
     dni: '44210987', telefono: '+51 988 333 222',
+    email: null,
     vive_con: true, es_titular: false,
   },
   {
@@ -34,6 +36,7 @@ const APODERADOS: Apoderado[] = [
     nombres: 'María Quiroz', apellidos: null,
     dni: '41887654', telefono: '+51 977 222 111',
     parentesco: 'Tía',
+    email: null,
     vive_con: false, es_titular: false,
   },
 ];
