@@ -1,5 +1,13 @@
 import type { SidebarItem } from '@/shared/lib/sidebar-registry';
 
-// Persona A: el módulo Auth normalmente no agrega items al sidebar
-// (el login no está en sidebar). Dejar vacío salvo que sea necesario.
-export const authSidebar: SidebarItem[] = [];
+// Auth registra el "Dashboard" del panel admin (entrada principal)
+export const authSidebar: SidebarItem[] = [
+  {
+    label: 'Dashboard',
+    href: '/dashboard',
+    icon: 'House',
+    roles: ['admin', 'docente'],
+    scope: 'admin',
+    order: 1,
+  },
+];

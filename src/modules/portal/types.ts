@@ -24,8 +24,9 @@ export type Apoderado = {
   tipo: ApoderadoTipo;
   nombres: string;
   apellidos: string | null;
-  dni: string;
+  dni: string | null;
   telefono: string | null;
+  email: string | null;
   ocupacion?: string | null;
   parentesco?: string | null;
   vive_con: boolean;
