@@ -78,6 +78,12 @@ export const inscripcionApi = {
   catalogoNivelesGrados: () =>
     apiFetch<{ data: NivelCatalogo[] }>('/catalogos/niveles-grados'),
 
+  verificarDni: (dni: string) =>
+    apiFetch<{ disponible: boolean; motivo: string | null }>('/inscripcion/verificar-dni', {
+      method: 'POST',
+      body: JSON.stringify({ dni }),
+    }),
+
   store: (payload: StoreInscripcionPayload) => {
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) {
