@@ -7,7 +7,7 @@ import type { Pago, PagoMetodo } from '@/modules/pagos/types';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { Modal } from '@/shared/components/Modal';
-import { ApiError } from '@/shared/lib/api';
+import { notify } from '@/shared/lib/notify';
 import { fmtFecha, fmtSoles } from '@/shared/lib/format';
 
 type Props = {
@@ -29,7 +29,6 @@ export function SubirComprobanteModal({ pago, onClose, onUploaded }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [observaciones, setObservaciones] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +36,6 @@ export function SubirComprobanteModal({ pago, onClose, onUploaded }: Props) {
     setMetodo('yape');
     setFile(null);
     setObservaciones('');
-    setError(null);
     setSuccess(false);
   }
 
@@ -45,18 +43,23 @@ export function SubirComprobanteModal({ pago, onClose, onUploaded }: Props) {
 
   async function handleSubmit() {
     if (!pago || !token) return;
-    if (!file) return setError('Selecciona el archivo del comprobante.');
+    if (!file) return notify.warning('Selecciona el archivo del comprobante.');
 
     setBusy(true);
-    setError(null);
+    const tid = notify.loading('Subiendo comprobante…');
     try {
       await subirComprobantePago(token, pago.id, file, metodo, observaciones || undefined);
+      notify.dismiss(tid);
+      notify.success({
+        title: 'Comprobante enviado',
+        description: 'El colegio lo verificará en las próximas 24 horas.',
+      });
       setSuccess(true);
       onUploaded?.();
       setTimeout(handleClose, 2000);
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Error de red.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo subir el comprobante.');
     } finally {
       setBusy(false);
     }
@@ -201,11 +204,6 @@ export function SubirComprobanteModal({ pago, onClose, onUploaded }: Props) {
             />
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-              {error}
-            </div>
-          )}
         </div>
       )}
     </Modal>

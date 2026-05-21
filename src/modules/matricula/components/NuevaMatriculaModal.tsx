@@ -6,7 +6,7 @@ import { crearMatricula, useCatalogoMatricula } from '@/modules/matricula/api';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { Modal } from '@/shared/components/Modal';
-import { ApiError } from '@/shared/lib/api';
+import { notify } from '@/shared/lib/notify';
 
 type Props = {
   open: boolean;
@@ -22,7 +22,6 @@ export function NuevaMatriculaModal({ open, onClose, onCreated }: Props) {
   const [estudianteId, setEstudianteId] = useState<number | null>(null);
   const [seccionId, setSeccionId] = useState<number | null>(null);
   const [observaciones, setObservaciones] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const filtrados = useMemo(() => {
@@ -41,29 +40,34 @@ export function NuevaMatriculaModal({ open, onClose, onCreated }: Props) {
 
   function reset() {
     setSearch(''); setEstudianteId(null); setSeccionId(null);
-    setObservaciones(''); setError(null);
+    setObservaciones('');
   }
 
   function handleClose() { reset(); onClose(); }
 
   async function handleSubmit() {
     if (!token) return;
-    setError(null);
-    if (!estudianteId) return setError('Selecciona un estudiante.');
-    if (!seccionId) return setError('Selecciona una sección.');
+    if (!estudianteId) return notify.warning('Selecciona un estudiante.');
+    if (!seccionId) return notify.warning('Selecciona una sección.');
 
     setBusy(true);
+    const tid = notify.loading('Creando matrícula y generando pagos…');
     try {
       await crearMatricula(token, {
         estudiante_id: estudianteId,
         seccion_id: seccionId,
         observaciones: observaciones || undefined,
       });
+      notify.dismiss(tid);
+      notify.success({
+        title: 'Matrícula creada',
+        description: 'Se generaron 11 pagos automáticamente (1 matrícula + 10 pensiones).',
+      });
       onCreated?.();
       handleClose();
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('Error de red.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo crear la matrícula.');
     } finally {
       setBusy(false);
     }
@@ -88,7 +92,7 @@ export function NuevaMatriculaModal({ open, onClose, onCreated }: Props) {
       {isLoading && <p className="text-sm text-text-secondary">Cargando catálogo…</p>}
 
       {!isLoading && !catalogo?.periodo && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-sm p-3">
           No hay periodo académico activo. Crea uno antes de generar matrículas.
         </div>
       )}
@@ -181,11 +185,6 @@ export function NuevaMatriculaModal({ open, onClose, onCreated }: Props) {
             </span>
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-              {error}
-            </div>
-          )}
         </div>
       )}
     </Modal>

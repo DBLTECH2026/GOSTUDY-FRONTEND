@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ApiError } from '@/shared/lib/api';
 import { authApi } from '@/modules/auth/api';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { Icon } from '@/shared/components/Icon';
+import { notify } from '@/shared/lib/notify';
 
 const PIN_LEN = 6;
 
@@ -17,7 +17,6 @@ export default function PortalLoginPage() {
   const [dni, setDni] = useState('');
   const [pin, setPin] = useState<string[]>(Array(PIN_LEN).fill(''));
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
@@ -52,29 +51,28 @@ export default function PortalLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
 
     const pinStr = pin.join('');
     if (!/^\d{8}$/.test(dni)) {
-      setError('El DNI debe tener 8 dígitos.');
+      notify.warning('El DNI debe tener 8 dígitos.');
       return;
     }
     if (pinStr.length !== PIN_LEN) {
-      setError('Ingresa los 6 dígitos del PIN.');
+      notify.warning('Ingresa los 6 dígitos del PIN.');
       return;
     }
 
     setLoading(true);
+    const tid = notify.loading('Validando acceso…');
     try {
       const session = await authApi.loginPortal({ dni, pin: pinStr });
       setSession(session);
+      notify.dismiss(tid);
+      notify.success({ title: '¡Bienvenido!', description: 'Accediendo al portal del estudiante.' });
       router.replace('/inicio');
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || 'No se pudo iniciar sesión.');
-      } else {
-        setError('Error de red. Verifica que el backend esté corriendo.');
-      }
+      notify.dismiss(tid);
+      notify.apiError(err, 'DNI o PIN incorrecto.');
     } finally {
       setLoading(false);
     }
@@ -159,12 +157,6 @@ export default function PortalLoginPage() {
                 ))}
               </div>
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

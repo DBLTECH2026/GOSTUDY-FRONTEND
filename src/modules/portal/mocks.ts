@@ -60,12 +60,12 @@ export const MI_MATRICULA_MOCK: MiMatriculaResponse = {
 };
 
 export const MIS_CURSOS_MOCK: CursoEnPortal[] = [
-  { id: 1, nombre: 'Matemática',     codigo: 'MAT-3', horas_semana: 6, docente_nombres: 'R.', docente_apellidos: 'Núñez' },
-  { id: 2, nombre: 'Comunicación',   codigo: 'COM-3', horas_semana: 5, docente_nombres: 'M.', docente_apellidos: 'Salas' },
-  { id: 3, nombre: 'Ciencia y Amb.', codigo: 'CYA-3', horas_semana: 4, docente_nombres: 'L.', docente_apellidos: 'Díaz' },
-  { id: 4, nombre: 'Personal Social',codigo: 'PSC-3', horas_semana: 3, docente_nombres: 'C.', docente_apellidos: 'Mejía' },
-  { id: 5, nombre: 'Inglés',         codigo: 'ING-3', horas_semana: 3, docente_nombres: 'K.', docente_apellidos: 'Ramos' },
-  { id: 6, nombre: 'Religión',       codigo: 'REL-3', horas_semana: 2, docente_nombres: 'J.', docente_apellidos: 'Ruiz' },
-  { id: 7, nombre: 'Educ. Física',   codigo: 'EDF-3', horas_semana: 4, docente_nombres: 'T.', docente_apellidos: 'Cabrera' },
-  { id: 8, nombre: 'Arte',           codigo: 'ART-3', horas_semana: 3, docente_nombres: 'S.', docente_apellidos: 'Vargas' },
+  { seccion_curso_id: 101, id: 1, nombre: 'Matemática',     codigo: 'MAT-3', horas_semana: 6, docente_nombres: 'R.', docente_apellidos: 'Núñez' },
+  { seccion_curso_id: 102, id: 2, nombre: 'Comunicación',   codigo: 'COM-3', horas_semana: 5, docente_nombres: 'M.', docente_apellidos: 'Salas' },
+  { seccion_curso_id: 103, id: 3, nombre: 'Ciencia y Amb.', codigo: 'CYA-3', horas_semana: 4, docente_nombres: 'L.', docente_apellidos: 'Díaz' },
+  { seccion_curso_id: 104, id: 4, nombre: 'Personal Social',codigo: 'PSC-3', horas_semana: 3, docente_nombres: 'C.', docente_apellidos: 'Mejía' },
+  { seccion_curso_id: 105, id: 5, nombre: 'Inglés',         codigo: 'ING-3', horas_semana: 3, docente_nombres: 'K.', docente_apellidos: 'Ramos' },
+  { seccion_curso_id: 106, id: 6, nombre: 'Religión',       codigo: 'REL-3', horas_semana: 2, docente_nombres: 'J.', docente_apellidos: 'Ruiz' },
+  { seccion_curso_id: 107, id: 7, nombre: 'Educ. Física',   codigo: 'EDF-3', horas_semana: 4, docente_nombres: 'T.', docente_apellidos: 'Cabrera' },
+  { seccion_curso_id: 108, id: 8, nombre: 'Arte',           codigo: 'ART-3', horas_semana: 3, docente_nombres: 'S.', docente_apellidos: 'Vargas' },
 ];

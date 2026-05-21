@@ -6,6 +6,7 @@ import { useMiPerfil } from '@/modules/portal/api';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { Modal } from '@/shared/components/Modal';
+import { notify } from '@/shared/lib/notify';
 
 export default function MiPerfilPage() {
   const { user } = useAuth();
@@ -139,20 +140,21 @@ function CambiarPinModal({ open, onClose }: { open: boolean; onClose: () => void
   const [pinActual, setPinActual] = useState('');
   const [pinNuevo, setPinNuevo] = useState('');
   const [pinConfirma, setPinConfirma] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   function reset() {
-    setPinActual(''); setPinNuevo(''); setPinConfirma(''); setError(null);
+    setPinActual(''); setPinNuevo(''); setPinConfirma('');
   }
 
   function handleClose() { reset(); onClose(); }
 
   function handleSubmit() {
-    setError(null);
-    if (!/^\d{6}$/.test(pinNuevo)) return setError('El PIN nuevo debe ser exactamente 6 dígitos.');
-    if (pinNuevo !== pinConfirma) return setError('La confirmación no coincide.');
-    if (pinActual.length !== 6) return setError('Ingresa tu PIN actual (6 dígitos).');
-    setError('Endpoint de cambio de PIN aún no implementado en el backend.');
+    if (pinActual.length !== 6) return notify.warning('Ingresa tu PIN actual (6 dígitos).');
+    if (!/^\d{6}$/.test(pinNuevo)) return notify.warning('El PIN nuevo debe ser exactamente 6 dígitos.');
+    if (pinNuevo !== pinConfirma) return notify.warning('La confirmación no coincide.');
+    notify.info({
+      title: 'Función en desarrollo',
+      description: 'El endpoint de cambio de PIN aún no está implementado en el backend.',
+    });
   }
 
   return (
@@ -173,12 +175,6 @@ function CambiarPinModal({ open, onClose }: { open: boolean; onClose: () => void
         <PinField label="PIN actual" value={pinActual} onChange={setPinActual} />
         <PinField label="PIN nuevo" value={pinNuevo} onChange={setPinNuevo} />
         <PinField label="Confirmar PIN nuevo" value={pinConfirma} onChange={setPinConfirma} />
-        {error && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-danger/10 rounded-sm">
-            <Icon name="TriangleAlert" size={14} className="text-danger" />
-            <span className="text-xs text-danger font-semibold">{error}</span>
-          </div>
-        )}
       </div>
     </Modal>
   );

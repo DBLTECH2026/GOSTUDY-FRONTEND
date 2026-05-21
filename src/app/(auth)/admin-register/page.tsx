@@ -7,6 +7,7 @@ import { ApiError } from '@/shared/lib/api';
 import { authApi } from '@/modules/auth/api';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { Icon } from '@/shared/components/Icon';
+import { notify } from '@/shared/lib/notify';
 
 export default function AdminRegisterPage() {
   const router = useRouter();
@@ -24,7 +25,6 @@ export default function AdminRegisterPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -33,15 +33,15 @@ export default function AdminRegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setFieldErrors({});
 
     if (form.password !== form.password_confirmation) {
-      setError('Las contraseñas no coinciden.');
+      notify.warning('Las contraseñas no coinciden.');
       return;
     }
 
     setLoading(true);
+    const tid = notify.loading('Creando cuenta…');
     try {
       const session = await authApi.registerAdmin({
         ...form,
@@ -49,14 +49,15 @@ export default function AdminRegisterPage() {
         telefono: form.telefono || undefined,
       });
       setSession(session);
+      notify.dismiss(tid);
+      notify.success({ title: 'Cuenta creada', description: 'Bienvenido al panel administrativo.' });
       router.replace('/dashboard');
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        if (err.errors) setFieldErrors(err.errors);
-      } else {
-        setError('Error de red. Verifica que el backend esté corriendo.');
+      notify.dismiss(tid);
+      if (err instanceof ApiError && err.errors) {
+        setFieldErrors(err.errors);
       }
+      notify.apiError(err, 'No se pudo crear la cuenta.');
     } finally {
       setLoading(false);
     }
@@ -161,12 +162,6 @@ export default function AdminRegisterPage() {
               />
             </Field>
           </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-              {error}
-            </div>
-          )}
 
           <button
             type="submit"

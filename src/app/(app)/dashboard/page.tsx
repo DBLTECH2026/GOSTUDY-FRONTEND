@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { useDashboardStats } from '@/modules/reportes/api';
 import { Icon } from '@/shared/components/Icon';
@@ -8,8 +10,16 @@ import { KpiCard } from '@/shared/components/KpiCard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const { data: stats, isLoading } = useDashboardStats();
   const saludo = user ? `Buenos días, ${user.nombres.split(' ')[0]}` : 'Buenos días';
+
+  // Los docentes no tienen dashboard administrativo — van a sus clases.
+  useEffect(() => {
+    if (user?.rol === 'docente') {
+      router.replace('/mis-clases');
+    }
+  }, [user, router]);
 
   const fmtSoles = (n: number) => `S/ ${n.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`;
   const sinDatos = (n: number, hint: string) => (n === 0 ? 'Sin datos aún' : hint);
@@ -19,7 +29,7 @@ export default function DashboardPage() {
       {/* Hero saludo */}
       <div className="bg-trilce-accent text-white rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">{saludo} 👋</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{saludo}</h1>
           <p className="text-white/80 text-sm mt-1">
             {new Date().toLocaleDateString('es-PE', {
               weekday: 'long',

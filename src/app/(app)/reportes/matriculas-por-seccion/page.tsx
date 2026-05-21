@@ -2,6 +2,7 @@
 
 import { useReporteMatriculasPorSeccion } from '@/modules/reportes/api';
 import { Badge } from '@/shared/components/Badge';
+import { BarChartReport } from '@/shared/components/charts/BarChartReport';
 import { Icon } from '@/shared/components/Icon';
 import type { SeccionRow } from '@/modules/reportes/types';
 
@@ -29,6 +30,12 @@ export default function ReporteMatriculasPorSeccionPage() {
   const totalMatr = secciones.reduce((s, c) => s + Number(c.matriculados), 0);
   const cobertura = totalCupos === 0 ? 0 : Math.round((totalMatr / totalCupos) * 100);
 
+  const ocupacionData = secciones.map((s) => ({
+    label: `${s.grado.split(' ')[0]} ${s.seccion}`,
+    value: Number(s.ocupacion_porcentaje),
+    caption: `${s.matriculados}/${s.capacidad} matriculados`,
+  }));
+
   return (
     <div className="flex flex-col gap-5">
       {/* Resumen oscuro */}
@@ -41,6 +48,20 @@ export default function ReporteMatriculasPorSeccionPage() {
         </div>
         <span className="text-3xl sm:text-4xl font-bold text-trilce-primary">{cobertura}%</span>
       </section>
+
+      {/* Bar chart de ocupación por sección */}
+      <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
+        <header className="flex items-center gap-2.5 mb-4">
+          <Icon name="ChartBar" size={18} className="text-trilce-primary" />
+          <h2 className="text-base font-bold">Ocupación por sección (%)</h2>
+        </header>
+        <BarChartReport
+          data={ocupacionData}
+          unidad="% ocupación"
+          formatValue={(v) => `${v.toFixed(1)}%`}
+          highlightMax={false}
+        />
+      </div>
 
       {/* Grid de secciones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

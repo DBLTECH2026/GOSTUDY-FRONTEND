@@ -33,7 +33,8 @@ export function Sidebar({ scope, role, open = false, onClose }: SidebarProps) {
       <aside
         className={`
           fixed inset-y-0 left-0 z-40 flex w-60 flex-col gap-1.5 p-6
-          transition-transform duration-200 lg:static lg:translate-x-0
+          overflow-y-auto
+          transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:flex-shrink-0
           ${open ? 'translate-x-0' : '-translate-x-full'}
           ${isPortal
             ? 'bg-bg-card border-r border-border'

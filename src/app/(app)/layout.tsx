@@ -39,21 +39,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex bg-bg-page">
+    <div className="h-screen flex bg-bg-page overflow-hidden">
       <Sidebar
         scope="admin"
         role={user.rol === 'docente' ? 'docente' : 'admin'}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         <Topbar
-          title="Panel administrativo"
+          title={user.rol === 'docente' ? 'Panel del docente' : 'Panel administrativo'}
           user={headerUser}
           onMenuClick={() => setSidebarOpen(true)}
           onLogout={handleLogout}
         />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

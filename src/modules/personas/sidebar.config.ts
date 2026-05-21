@@ -5,7 +5,7 @@ export const personasSidebar: SidebarItem[] = [
     label: 'Estudiantes',
     href: '/estudiantes',
     icon: 'GraduationCap',
-    roles: ['admin', 'docente'],
+    roles: ['admin'],
     scope: 'admin',
     order: 20,
   },

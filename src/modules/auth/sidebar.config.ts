@@ -6,7 +6,7 @@ export const authSidebar: SidebarItem[] = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: 'House',
-    roles: ['admin', 'docente'],
+    roles: ['admin'],
     scope: 'admin',
     order: 1,
   },

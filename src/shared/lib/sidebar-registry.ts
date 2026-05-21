@@ -33,6 +33,7 @@ import { matriculaSidebar } from '@/modules/matricula/sidebar.config';
 import { pagosSidebar } from '@/modules/pagos/sidebar.config';
 import { portalSidebar } from '@/modules/portal/sidebar.config';
 import { reportesSidebar } from '@/modules/reportes/sidebar.config';
+import { academicoSidebar } from '@/modules/academico/sidebar.config';
 
 const allItems: SidebarItem[] = [
   ...authSidebar,
@@ -43,6 +44,7 @@ const allItems: SidebarItem[] = [
   ...pagosSidebar,
   ...portalSidebar,
   ...reportesSidebar,
+  ...academicoSidebar,
 ];
 
 export function getSidebarItems(role: Role, scope: 'admin' | 'portal' = 'admin'): SidebarItem[] {

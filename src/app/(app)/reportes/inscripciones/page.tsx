@@ -2,6 +2,8 @@
 
 import { useReporteInscripciones } from '@/modules/reportes/api';
 import { Button } from '@/shared/components/Button';
+import { BarChartReport } from '@/shared/components/charts/BarChartReport';
+import { PieChartReport } from '@/shared/components/charts/PieChartReport';
 import { Icon } from '@/shared/components/Icon';
 import { KpiCard } from '@/shared/components/KpiCard';
 import { shortMes } from '@/shared/lib/format';
@@ -19,8 +21,15 @@ export default function ReporteInscripcionesPage() {
     return <EmptyReport title="Reporte de inscripciones" />;
   }
 
-  const maxMes = Math.max(1, ...data.por_mes.map((m) => Number(m.total)));
-  const maxNivel = Math.max(1, ...data.por_nivel.map((n) => Number(n.total)));
+  const barData = data.por_mes.map((m) => ({
+    label: shortMes(m.mes),
+    value: Number(m.total),
+  }));
+
+  const pieData = data.por_nivel.map((n) => ({
+    label: n.nivel,
+    value: Number(n.total),
+  }));
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,60 +53,24 @@ export default function ReporteInscripcionesPage() {
       </div>
 
       {/* Bar chart por mes */}
-      {data.por_mes.length > 0 && (
+      {barData.length > 0 && (
         <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
-          <header className="flex items-center gap-2.5 mb-5">
+          <header className="flex items-center gap-2.5 mb-4">
             <Icon name="ChartBar" size={18} className="text-trilce-primary" />
             <h2 className="text-base font-bold">Inscripciones por mes</h2>
           </header>
-          <div className="flex items-end justify-around h-44">
-            {data.por_mes.map((m) => {
-              const totalMes = Number(m.total);
-              const heightPct = (totalMes / maxMes) * 100;
-              return (
-                <div key={m.mes} className="flex flex-col items-center gap-1.5">
-                  <div
-                    className="w-8 sm:w-14 rounded-sm bg-trilce-primary"
-                    style={{ height: `${Math.max(20, heightPct)}%` }}
-                  />
-                  <span className="text-[10px] sm:text-[11px] text-text-secondary text-center">
-                    {shortMes(m.mes)} ({totalMes})
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <BarChartReport data={barData} unidad="inscripciones" />
         </div>
       )}
 
-      {/* Distribución por nivel */}
-      {data.por_nivel.length > 0 && (
+      {/* Distribución por nivel — pie */}
+      {pieData.length > 0 && (
         <div className="bg-bg-card border border-border rounded-md p-5 sm:p-6">
-          <header className="flex items-center gap-2.5 mb-3">
+          <header className="flex items-center gap-2.5 mb-4">
             <Icon name="ChartPie" size={18} className="text-trilce-primary" />
             <h2 className="text-base font-bold">Distribución por nivel</h2>
           </header>
-          <div className="flex flex-col gap-2">
-            {data.por_nivel.map((n) => {
-              const totalNivel = Number(n.total);
-              return (
-                <div
-                  key={n.nivel}
-                  className="flex items-center justify-between bg-bg-muted px-3 sm:px-4 py-3 rounded-sm gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-3 h-3 rounded-full bg-trilce-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold truncate">
-                      {n.nivel} · {totalNivel} inscripciones
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-trilce-primary flex-shrink-0">
-                    {Math.round((totalNivel / maxNivel) * 100)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <PieChartReport data={pieData} unidad="inscripciones" />
         </div>
       )}
     </div>

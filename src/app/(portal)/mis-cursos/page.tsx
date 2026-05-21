@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMisCursos, useMiMatricula } from '@/modules/portal/api';
 import { Badge } from '@/shared/components/Badge';
 import { Icon, IconName } from '@/shared/components/Icon';
@@ -64,21 +65,27 @@ export default function MisCursosPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {cursos.map((c) => (
-          <article
-            key={c.id}
-            className="bg-bg-card border border-border rounded-md p-5 flex flex-col gap-2.5"
+          <Link
+            key={c.seccion_curso_id}
+            href={`/mis-cursos/${c.seccion_curso_id}`}
+            className="group bg-bg-card border border-border rounded-md p-5 flex flex-col gap-2.5 hover:border-trilce-primary hover:shadow-md transition-all"
           >
-            <div className="w-11 h-11 rounded-md bg-trilce-primary-soft flex items-center justify-center">
-              <Icon name={iconForCurso(c)} size={22} className="text-trilce-primary" />
+            <div className="w-11 h-11 rounded-md bg-trilce-primary-soft flex items-center justify-center group-hover:bg-trilce-primary group-hover:text-white transition-colors">
+              <Icon name={iconForCurso(c)} size={22} className="text-trilce-primary group-hover:text-white transition-colors" />
             </div>
-            <h3 className="text-sm font-bold text-text-primary">{c.nombre}</h3>
+            <h3 className="text-sm font-bold text-text-primary group-hover:text-trilce-primary transition-colors">
+              {c.nombre}
+            </h3>
             <p className="text-[11px] text-text-muted">
               {c.codigo} · {c.horas_semana} hrs/sem
             </p>
             <p className="text-[11px] text-text-secondary">
               Prof. {c.docente_nombres ?? ''} {c.docente_apellidos ?? ''}
             </p>
-          </article>
+            <div className="text-[11px] text-trilce-primary font-semibold opacity-0 group-hover:opacity-100 transition-opacity mt-auto flex items-center gap-1">
+              Ver contenido <Icon name="ArrowRight" size={12} />
+            </div>
+          </Link>
         ))}
       </div>
     </div>

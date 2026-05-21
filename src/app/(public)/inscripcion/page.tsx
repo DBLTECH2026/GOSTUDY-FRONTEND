@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError } from '@/shared/lib/api';
 import { inscripcionApi, type NivelCatalogo } from '@/modules/inscripcion/api';
 import { Icon, IconName } from '@/shared/components/Icon';
+import { notify } from '@/shared/lib/notify';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -52,11 +53,9 @@ export default function InscripcionPage() {
   const [dniState, setDniState] = useState<DniState>('idle');
   const [dniMsg, setDniMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [success, setSuccess] = useState<{ codigo: string } | null>(null);
   const [enviandoFactura, setEnviandoFactura] = useState(false);
-  const [facturaMsg, setFacturaMsg] = useState<string | null>(null);
 
   useEffect(() => {
     inscripcionApi.catalogoNivelesGrados()
@@ -136,30 +135,28 @@ export default function InscripcionPage() {
   }
 
   function next() {
-    setError(null);
     if (step === 1) {
-      if (!/^\d{8}$/.test(form.dni_estudiante)) return setError('El DNI del alumno debe tener 8 dígitos.');
-      if (dniState === 'taken') return setError(dniMsg ?? 'Este DNI ya está registrado.');
-      if (dniState === 'checking') return setError('Verificando disponibilidad del DNI…');
-      if (!form.nombres_estudiante || !form.apellidos_estudiante) return setError('Completa nombres y apellidos.');
-      if (!form.fecha_nacimiento) return setError('Selecciona la fecha de nacimiento.');
-      if (!form.direccion) return setError('Ingresa la dirección.');
-      if (!form.nivel_id || !form.grado_id) return setError('Selecciona nivel y grado al que postula.');
+      if (!/^\d{8}$/.test(form.dni_estudiante)) return notify.warning('El DNI del alumno debe tener 8 dígitos.');
+      if (dniState === 'taken') return notify.warning(dniMsg ?? 'Este DNI ya está registrado.');
+      if (dniState === 'checking') return notify.info('Verificando disponibilidad del DNI…');
+      if (!form.nombres_estudiante || !form.apellidos_estudiante) return notify.warning('Completa nombres y apellidos.');
+      if (!form.fecha_nacimiento) return notify.warning('Selecciona la fecha de nacimiento.');
+      if (!form.direccion) return notify.warning('Ingresa la dirección.');
+      if (!form.nivel_id || !form.grado_id) return notify.warning('Selecciona nivel y grado al que postula.');
     }
     if (step === 2) {
-      if (!form.apoderado_nombres || !form.apoderado_apellidos) return setError('Completa los datos del apoderado.');
-      if (!/^\d{8}$/.test(form.apoderado_dni)) return setError('El DNI del apoderado debe tener 8 dígitos.');
+      if (!form.apoderado_nombres || !form.apoderado_apellidos) return notify.warning('Completa los datos del apoderado.');
+      if (!/^\d{8}$/.test(form.apoderado_dni)) return notify.warning('El DNI del apoderado debe tener 8 dígitos.');
     }
     if (step === 3) {
-      if (!comprobantePago) return setError('Adjunta el comprobante de pago de la matrícula.');
-      if (!certificadoEstudios) return setError('Adjunta el certificado de estudios del alumno.');
+      if (!comprobantePago) return notify.warning('Adjunta el comprobante de pago de la matrícula.');
+      if (!certificadoEstudios) return notify.warning('Adjunta el certificado de estudios del alumno.');
     }
     setDirection('forward');
     setStep((s) => (s < 4 ? ((s + 1) as Step) : s));
   }
 
   function back() {
-    setError(null);
     setDirection('backward');
     setStep((s) => (s > 1 ? ((s - 1) as Step) : s));
   }
@@ -171,37 +168,36 @@ export default function InscripcionPage() {
       if (target >= 3 && !paso2Completo) return;
       if (target >= 4 && !paso3Completo) return;
     }
-    setError(null);
     setDirection(target > step ? 'forward' : 'backward');
     setStep(target);
   }
 
   async function handleEnviarFactura() {
-    setFacturaMsg(null);
-    setError(null);
     if (!form.apoderado_email || !form.apoderado_email.includes('@')) {
-      return setError('Ingresa un email válido antes de enviar la facturación.');
+      return notify.warning('Ingresa un email válido antes de enviar la facturación.');
     }
     const nombre = `${form.nombres_estudiante} ${form.apellidos_estudiante}`.trim() || 'Alumno por inscribir';
     setEnviandoFactura(true);
+    const tid = notify.loading('Enviando facturación al email…');
     try {
       const r = await inscripcionApi.enviarFacturacion(form.apoderado_email, nombre);
-      setFacturaMsg(r.message);
+      notify.dismiss(tid);
+      notify.success({ title: 'Facturación enviada', description: r.message });
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message);
-      else setError('No se pudo enviar la facturación.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo enviar la facturación.');
     } finally {
       setEnviandoFactura(false);
     }
   }
 
   async function handleSubmit() {
-    setError(null);
     setFieldErrors({});
-    if (!/^\d{6}$/.test(form.pin)) return setError('El PIN debe ser de 6 dígitos.');
-    if (form.pin !== form.pin_confirmation) return setError('Los PIN no coinciden.');
+    if (!/^\d{6}$/.test(form.pin)) return notify.warning('El PIN debe ser de 6 dígitos.');
+    if (form.pin !== form.pin_confirmation) return notify.warning('Los PIN no coinciden.');
 
     setLoading(true);
+    const tid = notify.loading('Enviando inscripción…');
     try {
       const res = await inscripcionApi.store({
         dni_estudiante: form.dni_estudiante,
@@ -228,14 +224,16 @@ export default function InscripcionPage() {
         comprobante_pago: comprobantePago,
         certificado_estudios: certificadoEstudios,
       });
+      notify.dismiss(tid);
+      notify.success({
+        title: '¡Inscripción enviada!',
+        description: `Código ${res.data.codigo}. Quedará pendiente de revisión.`,
+      });
       setSuccess({ codigo: res.data.codigo });
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        if (err.errors) setFieldErrors(err.errors);
-      } else {
-        setError('Error de red. Verifica que el backend esté corriendo.');
-      }
+      notify.dismiss(tid);
+      if (err instanceof ApiError && err.errors) setFieldErrors(err.errors);
+      notify.apiError(err, 'No se pudo enviar la inscripción.');
     } finally {
       setLoading(false);
     }
@@ -407,7 +405,6 @@ export default function InscripcionPage() {
                 fieldErrors={fieldErrors}
                 onEnviarFactura={handleEnviarFactura}
                 enviandoFactura={enviandoFactura}
-                facturaMsg={facturaMsg}
               />
             )}
 
@@ -424,13 +421,6 @@ export default function InscripcionPage() {
 
             {step === 4 && <Paso4 form={form} update={update} fieldErrors={fieldErrors} />}
           </div>
-
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3 flex items-start gap-2 animate-fade-up">
-              <Icon name="TriangleAlert" size={16} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
 
           <div className="flex justify-between items-center mt-6 pt-6 border-t border-border">
             {step > 1 ? (
@@ -683,14 +673,13 @@ function Paso1({
 /* ─── Paso 2 ─── */
 
 function Paso2({
-  form, update, fieldErrors, onEnviarFactura, enviandoFactura, facturaMsg,
+  form, update, fieldErrors, onEnviarFactura, enviandoFactura,
 }: {
   form: any;
   update: any;
   fieldErrors: Record<string, string[]>;
   onEnviarFactura: () => void;
   enviandoFactura: boolean;
-  facturaMsg: string | null;
 }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
@@ -782,13 +771,6 @@ function Paso2({
             </button>
           </div>
         </Field>
-
-        {facturaMsg && (
-          <div className="mt-2 bg-success/10 border border-success/30 text-success text-xs rounded-sm p-2.5 flex items-center gap-2 animate-fade-up">
-            <Icon name="CircleCheck" size={14} /> {facturaMsg}
-          </div>
-        )}
-
         <p className="text-[11px] text-text-muted mt-2 leading-relaxed">
           Al enviar la facturación, te llegará el monto a pagar de la matrícula y los datos bancarios.
         </p>

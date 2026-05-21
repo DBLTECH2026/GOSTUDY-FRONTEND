@@ -6,6 +6,7 @@ import { crearEstudiante } from '@/modules/personas/api';
 import { Button } from '@/shared/components/Button';
 import { Modal } from '@/shared/components/Modal';
 import { ApiError } from '@/shared/lib/api';
+import { notify } from '@/shared/lib/notify';
 
 type Props = {
   open: boolean;
@@ -26,7 +27,6 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
     distrito: '',
     ie_procedencia: '',
   });
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
 
@@ -35,7 +35,6 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
       dni: '', pin: '', nombres: '', apellidos: '', fecha_nacimiento: '',
       sexo: 'M', direccion: '', distrito: '', ie_procedencia: '',
     });
-    setError(null);
     setFieldErrors({});
   }
 
@@ -46,18 +45,18 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
 
   async function handleSubmit() {
     if (!token) return;
-    setError(null);
     setFieldErrors({});
 
-    if (!/^\d{8}$/.test(form.dni)) return setError('DNI debe tener 8 dígitos.');
-    if (!/^\d{6}$/.test(form.pin)) return setError('PIN debe ser de 6 dígitos.');
-    if (!form.nombres || !form.apellidos) return setError('Completa nombres y apellidos.');
-    if (!form.fecha_nacimiento) return setError('Selecciona la fecha de nacimiento.');
-    if (!form.direccion) return setError('Indica la dirección.');
+    if (!/^\d{8}$/.test(form.dni)) return notify.warning('DNI debe tener 8 dígitos.');
+    if (!/^\d{6}$/.test(form.pin)) return notify.warning('PIN debe ser de 6 dígitos.');
+    if (!form.nombres || !form.apellidos) return notify.warning('Completa nombres y apellidos.');
+    if (!form.fecha_nacimiento) return notify.warning('Selecciona la fecha de nacimiento.');
+    if (!form.direccion) return notify.warning('Indica la dirección.');
 
     setBusy(true);
+    const tid = notify.loading('Creando estudiante…');
     try {
-      await crearEstudiante(token, {
+      const res = await crearEstudiante(token, {
         dni: form.dni,
         pin: form.pin,
         nombres: form.nombres,
@@ -68,15 +67,17 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
         distrito: form.distrito || undefined,
         ie_procedencia: form.ie_procedencia || undefined,
       });
+      notify.dismiss(tid);
+      notify.success({
+        title: 'Estudiante creado',
+        description: `${res.data.nombre_completo} · ${res.data.codigo_estudiante}`,
+      });
       onCreated?.();
       handleClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-        if (err.errors) setFieldErrors(err.errors);
-      } else {
-        setError('Error de red.');
-      }
+      notify.dismiss(tid);
+      if (err instanceof ApiError && err.errors) setFieldErrors(err.errors);
+      notify.apiError(err, 'No se pudo crear el estudiante.');
     } finally {
       setBusy(false);
     }
@@ -195,11 +196,6 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
         </Field>
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-          {error}
-        </div>
-      )}
     </Modal>
   );
 }

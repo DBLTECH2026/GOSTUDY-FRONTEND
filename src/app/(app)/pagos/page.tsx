@@ -5,12 +5,13 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 import { registrarPago, usePagosAdmin } from '@/modules/pagos/api';
 import { VerComprobanteModal } from '@/modules/pagos/components/VerComprobanteModal';
 import type { PagoListItem } from '@/modules/pagos/types';
-import { ApiError } from '@/shared/lib/api';
 import { Badge } from '@/shared/components/Badge';
+import { useConfirm } from '@/shared/components/ConfirmProvider';
 import { Button } from '@/shared/components/Button';
 import { Icon } from '@/shared/components/Icon';
 import { KpiCard } from '@/shared/components/KpiCard';
 import { fmtFecha, fmtSoles } from '@/shared/lib/format';
+import { notify } from '@/shared/lib/notify';
 
 type Tab = 'por_verificar' | 'pagado' | 'vencido' | 'todos';
 
@@ -23,6 +24,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function PagosAdminPage() {
   const { token } = useAuth();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<Tab>('por_verificar');
   const [search, setSearch] = useState('');
   // El backend filtra por estado; "por_verificar" lo aplicamos en frontend
@@ -36,8 +38,6 @@ export default function PagosAdminPage() {
 
   const [verComprobante, setVerComprobante] = useState<PagoListItem | null>(null);
   const [aprobando, setAprobando] = useState<number | null>(null);
-  const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const [actionErr, setActionErr] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let out = pagos;
@@ -74,8 +74,18 @@ export default function PagosAdminPage() {
 
   async function aprobar(p: PagoListItem) {
     if (!token) return;
-    setActionErr(null); setActionMsg(null);
+    const alumno = p.alumno ? `${p.alumno.nombres} ${p.alumno.apellidos}` : `Pago #${p.id}`;
+    const ok = await confirm({
+      title: '¿Aprobar este pago?',
+      description: `Se marcará como PAGADO el ${fmtSoles(p.monto)} de ${alumno} (${p.descripcion}).`,
+      confirmText: 'Aprobar pago',
+      cancelText: 'Cancelar',
+      icon: 'CircleCheck',
+    });
+    if (!ok) return;
+
     setAprobando(p.id);
+    const tid = notify.loading('Aprobando pago…');
     try {
       await registrarPago(token, p.id, {
         metodo: (p.metodo ?? 'transferencia') as never,
@@ -83,11 +93,12 @@ export default function PagosAdminPage() {
         observaciones: 'Pago verificado y aprobado por admin.',
         comprobante: null,
       });
-      setActionMsg(`Pago de ${p.alumno?.nombres ?? '#' + p.id} aprobado.`);
+      notify.dismiss(tid);
+      notify.success({ title: 'Pago aprobado', description: `${alumno} · ${fmtSoles(p.monto)}` });
       reload();
     } catch (err) {
-      if (err instanceof ApiError) setActionErr(err.message);
-      else setActionErr('Error de red.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo aprobar el pago.');
     } finally {
       setAprobando(null);
     }
@@ -106,13 +117,6 @@ export default function PagosAdminPage() {
           </p>
         </div>
       </section>
-
-      {actionMsg && (
-        <div className="bg-success/10 border border-success/30 text-success text-sm rounded-sm p-3">{actionMsg}</div>
-      )}
-      {actionErr && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">{actionErr}</div>
-      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard label="Recaudado" value={fmtSoles(stats.recaudado)} icon="Wallet" iconColor="text-success" />

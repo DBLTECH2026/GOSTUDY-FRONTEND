@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { inscripcionApi, type Inscripcion } from '@/modules/inscripcion/api';
-import { ApiError } from '@/shared/lib/api';
 import { Badge } from '@/shared/components/Badge';
+import { useConfirm } from '@/shared/components/ConfirmProvider';
 import { Icon } from '@/shared/components/Icon';
+import { notify } from '@/shared/lib/notify';
 
 type Tab = 'pendiente' | 'aprobada' | 'rechazada';
 
@@ -17,27 +18,23 @@ const TABS: { key: Tab; label: string }[] = [
 
 export default function InscripcionesPage() {
   const { token } = useAuth();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<Tab>('pendiente');
   const [items, setItems] = useState<Inscripcion[]>([]);
   const [selected, setSelected] = useState<Inscripcion | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const cargar = useCallback(
     async (estado: Tab) => {
       if (!token) return;
       setLoading(true);
-      setActionError(null);
-      setActionMsg(null);
       try {
         const res = await inscripcionApi.listar(token, estado);
         setItems(res.data);
         setSelected(res.data[0] ?? null);
       } catch (err) {
-        if (err instanceof ApiError) setActionError(err.message);
-        else setActionError('Error de red al cargar inscripciones.');
+        notify.apiError(err, 'No se pudieron cargar las inscripciones.');
         setItems([]);
         setSelected(null);
       } finally {
@@ -61,30 +58,55 @@ export default function InscripcionesPage() {
     );
   });
 
-  async function aprobar(id: number) {
+  async function aprobar(insc: Inscripcion) {
     if (!token) return;
-    setActionError(null);
+    const ok = await confirm({
+      title: '¿Aprobar inscripción?',
+      description: `Se creará el estudiante "${insc.nombre_completo}" y se generarán los pagos del periodo. Esta acción no se puede deshacer.`,
+      confirmText: 'Aprobar inscripción',
+      cancelText: 'Cancelar',
+      variant: 'default',
+      icon: 'CircleCheck',
+    });
+    if (!ok) return;
+
+    const tid = notify.loading('Aprobando inscripción y generando matrícula…');
     try {
-      const res = await inscripcionApi.aprobar(token, id);
-      setActionMsg(res.message);
+      const res = await inscripcionApi.aprobar(token, insc.id);
+      notify.dismiss(tid);
+      notify.success({ title: 'Inscripción aprobada', description: res.message });
       await cargar(tab);
     } catch (err) {
-      if (err instanceof ApiError) setActionError(err.message);
-      else setActionError('Error de red.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo aprobar la inscripción.');
     }
   }
 
-  async function rechazar(id: number) {
+  async function rechazar(insc: Inscripcion) {
     if (!token) return;
-    const motivo = window.prompt('Motivo del rechazo (opcional):') ?? undefined;
-    setActionError(null);
+    const motivo = await confirm({
+      title: '¿Rechazar inscripción?',
+      description: `Indica el motivo del rechazo. Se notificará al apoderado de ${insc.nombre_completo}.`,
+      confirmText: 'Rechazar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      input: {
+        label: 'Motivo del rechazo (opcional)',
+        placeholder: 'Ej. Documentos ilegibles, falta certificado de estudios…',
+        multiline: true,
+      },
+    });
+    if (motivo === null || motivo === false) return;
+
+    const tid = notify.loading('Rechazando inscripción…');
     try {
-      const res = await inscripcionApi.rechazar(token, id, motivo);
-      setActionMsg(res.message);
+      const res = await inscripcionApi.rechazar(token, insc.id, motivo as string || undefined);
+      notify.dismiss(tid);
+      notify.success({ title: 'Inscripción rechazada', description: res.message });
       await cargar(tab);
     } catch (err) {
-      if (err instanceof ApiError) setActionError(err.message);
-      else setActionError('Error de red.');
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo rechazar la inscripción.');
     }
   }
 
@@ -98,17 +120,6 @@ export default function InscripcionesPage() {
           </p>
         </div>
       </header>
-
-      {actionMsg && (
-        <div className="bg-success/10 border border-success/30 text-success text-sm rounded-sm p-3">
-          {actionMsg}
-        </div>
-      )}
-      {actionError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-          {actionError}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-5">
         {/* Lista */}
@@ -269,13 +280,13 @@ export default function InscripcionesPage() {
               {selected.estado === 'pendiente' && (
                 <div className="flex gap-3 mt-5">
                   <button
-                    onClick={() => rechazar(selected.id)}
+                    onClick={() => rechazar(selected)}
                     className="flex-1 border border-danger text-danger font-semibold py-2.5 rounded-sm hover:bg-red-50"
                   >
                     Rechazar
                   </button>
                   <button
-                    onClick={() => aprobar(selected.id)}
+                    onClick={() => aprobar(selected)}
                     className="flex-1 bg-success hover:opacity-90 text-white font-semibold py-2.5 rounded-sm flex items-center justify-center gap-2"
                   >
                     <Icon name="CircleCheck" size={16} /> Aprobar inscripción

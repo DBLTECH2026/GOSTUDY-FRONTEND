@@ -37,6 +37,8 @@ export type DocenteRow = {
   id: number;
   codigo_docente: string;
   nombre_completo: string;
+  nombres?: string;
+  apellidos?: string;
   email: string;
   dni: string | null;
   telefono: string | null;
@@ -54,6 +56,18 @@ export type CrearDocentePayload = {
   telefono?: string;
   especialidad?: string;
   grado_academico?: string;
+};
+
+export type ActualizarDocentePayload = {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  password?: string;
+  dni?: string;
+  telefono?: string;
+  especialidad?: string;
+  grado_academico?: string;
+  estado?: 'activo' | 'inactivo';
 };
 
 /* ─── Estudiantes ─── */
@@ -121,5 +135,24 @@ export async function crearDocente(token: string, payload: CrearDocentePayload) 
     method: 'POST',
     token,
     body: JSON.stringify(payload),
+  });
+}
+
+export async function obtenerDocente(token: string, id: number) {
+  return apiFetch<{ data: DocenteRow }>(`/docentes/${id}`, { token });
+}
+
+export async function actualizarDocente(token: string, id: number, payload: ActualizarDocentePayload) {
+  return apiFetch<{ message: string; data: DocenteRow }>(`/docentes/${id}`, {
+    method: 'PUT',
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function eliminarDocente(token: string, id: number) {
+  return apiFetch<{ message: string }>(`/docentes/${id}`, {
+    method: 'DELETE',
+    token,
   });
 }

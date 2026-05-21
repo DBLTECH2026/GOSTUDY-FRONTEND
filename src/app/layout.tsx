@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/modules/auth/AuthProvider";
+import { ConfirmProvider } from "@/shared/components/ConfirmProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +38,21 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </AuthProvider>
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          expand
+          duration={4000}
+          toastOptions={{
+            classNames: {
+              toast: 'font-sans',
+            },
+          }}
+        />
       </body>
     </html>
   );

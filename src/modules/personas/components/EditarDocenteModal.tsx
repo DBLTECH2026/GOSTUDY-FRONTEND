@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/modules/auth/AuthProvider';
-import { crearDocente } from '@/modules/personas/api';
+import { actualizarDocente, DocenteRow } from '@/modules/personas/api';
 import { Button } from '@/shared/components/Button';
 import { Modal } from '@/shared/components/Modal';
 import { ApiError } from '@/shared/lib/api';
@@ -10,11 +10,12 @@ import { notify } from '@/shared/lib/notify';
 
 type Props = {
   open: boolean;
+  docente: DocenteRow | null;
   onClose: () => void;
-  onCreated?: () => void;
+  onUpdated?: () => void;
 };
 
-export function NuevoDocenteModal({ open, onClose, onCreated }: Props) {
+export function EditarDocenteModal({ open, docente, onClose, onUpdated }: Props) {
   const { token } = useAuth();
   const [form, setForm] = useState({
     nombres: '',
@@ -25,52 +26,66 @@ export function NuevoDocenteModal({ open, onClose, onCreated }: Props) {
     telefono: '',
     especialidad: '',
     grado_academico: '',
+    estado: 'activo' as 'activo' | 'inactivo',
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
 
-  function reset() {
-    setForm({
-      nombres: '', apellidos: '', email: '', password: '', dni: '',
-      telefono: '', especialidad: '', grado_academico: '',
-    });
+  useEffect(() => {
+    if (docente) {
+      setForm({
+        nombres: docente.nombres ?? docente.nombre_completo.split(' ')[0] ?? '',
+        apellidos: docente.apellidos ?? docente.nombre_completo.split(' ').slice(1).join(' ') ?? '',
+        email: docente.email,
+        password: '',
+        dni: docente.dni ?? '',
+        telefono: docente.telefono ?? '',
+        especialidad: docente.especialidad ?? '',
+        grado_academico: docente.grado_academico ?? '',
+        estado: docente.estado,
+      });
+      setFieldErrors({});
+    }
+  }, [docente]);
+
+  function handleClose() {
     setFieldErrors({});
+    onClose();
   }
 
-  function handleClose() { reset(); onClose(); }
-
   async function handleSubmit() {
-    if (!token) return;
+    if (!token || !docente) return;
     setFieldErrors({});
 
     if (!form.nombres || !form.apellidos) return notify.warning('Completa nombres y apellidos.');
     if (!form.email.includes('@')) return notify.warning('Email inválido.');
-    if (form.password.length < 6) return notify.warning('Password mínimo 6 caracteres.');
+    if (form.password && form.password.length < 6) return notify.warning('Si cambias el password, mínimo 6 caracteres.');
 
     setBusy(true);
-    const tid = notify.loading('Creando docente…');
+    const tid = notify.loading('Guardando cambios…');
     try {
-      const res = await crearDocente(token, {
+      const res = await actualizarDocente(token, docente.id, {
         nombres: form.nombres,
         apellidos: form.apellidos,
         email: form.email,
-        password: form.password,
+        password: form.password || undefined,
         dni: form.dni || undefined,
         telefono: form.telefono || undefined,
         especialidad: form.especialidad || undefined,
         grado_academico: form.grado_academico || undefined,
+        estado: form.estado,
       });
       notify.dismiss(tid);
       notify.success({
-        title: 'Docente creado',
-        description: `${res.data.nombre_completo} · ${res.data.codigo_docente}`,
+        title: 'Docente actualizado',
+        description: res.data.nombre_completo,
       });
-      onCreated?.();
+      onUpdated?.();
       handleClose();
     } catch (err) {
       notify.dismiss(tid);
       if (err instanceof ApiError && err.errors) setFieldErrors(err.errors);
-      notify.apiError(err, 'No se pudo crear el docente.');
+      notify.apiError(err, 'No se pudo actualizar el docente.');
     } finally {
       setBusy(false);
     }
@@ -80,14 +95,14 @@ export function NuevoDocenteModal({ open, onClose, onCreated }: Props) {
     <Modal
       open={open}
       onClose={handleClose}
-      title="Nuevo docente"
-      subtitle="El docente podrá entrar al panel admin con email + password"
+      title="Editar docente"
+      subtitle={docente ? `${docente.codigo_docente} — deja el password vacío para no cambiarlo` : ''}
       width={520}
       footer={
         <>
           <Button variant="secondary" onClick={handleClose}>Cancelar</Button>
           <Button variant="primary" onClick={handleSubmit} disabled={busy}>
-            {busy ? 'Creando…' : 'Crear docente'}
+            {busy ? 'Guardando…' : 'Guardar cambios'}
           </Button>
         </>
       }
@@ -113,19 +128,28 @@ export function NuevoDocenteModal({ open, onClose, onCreated }: Props) {
           <input
             type="email"
             value={form.email}
-            placeholder="docente@trilce.edu.pe"
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-sm text-sm focus:outline-none focus:border-trilce-primary"
           />
         </Field>
-        <Field label="Password temporal *" err={fieldErrors.password?.[0]}>
+        <Field label="Nuevo password (opcional)" err={fieldErrors.password?.[0]}>
           <input
             type="text"
             value={form.password}
-            placeholder="Mín 6 caracteres"
+            placeholder="Dejar vacío para no cambiar"
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="w-full px-3 py-2 border border-border rounded-sm text-sm font-mono focus:outline-none focus:border-trilce-primary"
           />
+        </Field>
+        <Field label="Estado">
+          <select
+            value={form.estado}
+            onChange={(e) => setForm({ ...form, estado: e.target.value as 'activo' | 'inactivo' })}
+            className="w-full px-3 py-2 border border-border rounded-sm text-sm focus:outline-none focus:border-trilce-primary"
+          >
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
         </Field>
         <Field label="DNI" err={fieldErrors.dni?.[0]}>
           <input

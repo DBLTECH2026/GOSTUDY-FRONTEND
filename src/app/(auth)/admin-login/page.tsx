@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ApiError } from '@/shared/lib/api';
 import { authApi } from '@/modules/auth/api';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { Icon } from '@/shared/components/Icon';
+import { notify } from '@/shared/lib/notify';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -17,28 +17,32 @@ export default function AdminLoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Si el usuario es docente, lo mandamos a /mis-clases (no tiene dashboard).
+  function rutaInicial(rol: string, tipo: string): string {
+    if (tipo !== 'admin') return '/inicio'; // estudiante -> portal
+    return rol === 'docente' ? '/mis-clases' : '/dashboard';
+  }
 
   useEffect(() => {
     if (hydrated && user) {
-      router.replace(user.tipo === 'admin' ? '/dashboard' : '/inicio');
+      router.replace(rutaInicial(user.rol, user.tipo));
     }
   }, [hydrated, user, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setLoading(true);
+    const tid = notify.loading('Validando credenciales…');
     try {
       const session = await authApi.loginAdmin({ email, password });
       setSession(session);
-      router.replace('/dashboard');
+      notify.dismiss(tid);
+      notify.success({ title: '¡Bienvenido!', description: 'Sesión iniciada correctamente.' });
+      router.replace(rutaInicial(session.user.rol, session.user.tipo));
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || 'No se pudo iniciar sesión.');
-      } else {
-        setError('Error de red. Verifica que el backend esté corriendo.');
-      }
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se pudo iniciar sesión.');
     } finally {
       setLoading(false);
     }
@@ -112,12 +116,6 @@ export default function AdminLoginPage() {
             />
             Mantener sesión iniciada
           </label>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-sm p-3">
-              {error}
-            </div>
-          )}
 
           <button
             type="submit"
