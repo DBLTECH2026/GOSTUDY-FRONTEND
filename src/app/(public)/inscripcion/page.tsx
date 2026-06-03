@@ -82,7 +82,17 @@ export default function InscripcionPage() {
         .then((r) => {
           if (r.disponible) {
             setDniState('available');
-            setDniMsg('DNI disponible');
+            // Autocompletar nombres/apellidos desde RENIEC sin pisar lo ya escrito
+            if (r.identidad && (r.identidad.nombres || r.identidad.apellidos)) {
+              setDniMsg('DNI disponible · datos cargados desde RENIEC');
+              setForm((f) => ({
+                ...f,
+                nombres_estudiante: f.nombres_estudiante || r.identidad!.nombres,
+                apellidos_estudiante: f.apellidos_estudiante || r.identidad!.apellidos,
+              }));
+            } else {
+              setDniMsg('DNI disponible · no se hallaron datos en RENIEC, complétalos manualmente');
+            }
           } else {
             setDniState('taken');
             setDniMsg(r.motivo ?? 'Este DNI ya está registrado');

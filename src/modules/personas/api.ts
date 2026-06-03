@@ -70,6 +70,37 @@ export type ActualizarDocentePayload = {
   estado?: 'activo' | 'inactivo';
 };
 
+/* ─── Consulta de identidad (APIsPERU vía backend) ─── */
+
+export type ConsultaDni = {
+  dni: string;
+  nombres: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  apellidos: string;
+  nombre_completo: string;
+};
+
+export type ConsultaRuc = {
+  ruc: string;
+  razon_social: string;
+  nombre_comercial: string;
+  direccion: string;
+  distrito: string;
+  provincia: string;
+  departamento: string;
+  estado: string;
+  condicion: string;
+};
+
+export async function consultarDni(token: string, dni: string) {
+  return apiFetch<{ data: ConsultaDni }>(`/consulta/dni/${dni}`, { token });
+}
+
+export async function consultarRuc(token: string, ruc: string) {
+  return apiFetch<{ data: ConsultaRuc }>(`/consulta/ruc/${ruc}`, { token });
+}
+
 /* ─── Estudiantes ─── */
 
 export function useEstudiantes(q?: string) {

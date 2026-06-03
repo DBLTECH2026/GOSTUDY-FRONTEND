@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/modules/auth/AuthProvider';
-import { crearEstudiante } from '@/modules/personas/api';
+import { consultarDni, crearEstudiante } from '@/modules/personas/api';
 import { Button } from '@/shared/components/Button';
 import { Modal } from '@/shared/components/Modal';
 import { ApiError } from '@/shared/lib/api';
@@ -29,6 +29,27 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+
+  async function handleLookupDni() {
+    if (!token) return;
+    if (!/^\d{8}$/.test(form.dni)) return notify.warning('Ingresa un DNI de 8 dígitos para buscar.');
+
+    setLookingUp(true);
+    const tid = notify.loading('Consultando RENIEC…');
+    try {
+      const { data } = await consultarDni(token, form.dni);
+      setForm((f) => ({ ...f, nombres: data.nombres, apellidos: data.apellidos }));
+      setFieldErrors((e) => ({ ...e, nombres: [], apellidos: [] }));
+      notify.dismiss(tid);
+      notify.success({ title: 'DNI encontrado', description: data.nombre_completo });
+    } catch (err) {
+      notify.dismiss(tid);
+      notify.apiError(err, 'No se encontró el DNI.');
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   function reset() {
     setForm({
@@ -101,14 +122,32 @@ export function NuevoEstudianteModal({ open, onClose, onCreated }: Props) {
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="DNI *" err={fieldErrors.dni?.[0]}>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={8}
-            value={form.dni}
-            onChange={(e) => setForm({ ...form, dni: e.target.value.replace(/\D/g, '') })}
-            className="w-full px-3 py-2 border border-border rounded-sm text-sm focus:outline-none focus:border-trilce-primary"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={8}
+              value={form.dni}
+              onChange={(e) => setForm({ ...form, dni: e.target.value.replace(/\D/g, '') })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleLookupDni();
+                }
+              }}
+              placeholder="8 dígitos"
+              className="flex-1 px-3 py-2 border border-border rounded-sm text-sm focus:outline-none focus:border-trilce-primary"
+            />
+            <button
+              type="button"
+              onClick={handleLookupDni}
+              disabled={lookingUp || form.dni.length !== 8}
+              title="Buscar datos en RENIEC"
+              className="shrink-0 px-3 py-2 rounded-sm text-sm font-semibold border border-trilce-primary text-trilce-primary hover:bg-trilce-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {lookingUp ? '…' : 'Buscar'}
+            </button>
+          </div>
         </Field>
         <Field label="PIN 6 dígitos *" err={fieldErrors.pin?.[0]}>
           <input

@@ -79,7 +79,11 @@ export const inscripcionApi = {
     apiFetch<{ data: NivelCatalogo[] }>('/catalogos/niveles-grados'),
 
   verificarDni: (dni: string) =>
-    apiFetch<{ disponible: boolean; motivo: string | null }>('/inscripcion/verificar-dni', {
+    apiFetch<{
+      disponible: boolean;
+      motivo: string | null;
+      identidad: { nombres: string; apellidos: string } | null;
+    }>('/inscripcion/verificar-dni', {
       method: 'POST',
       body: JSON.stringify({ dni }),
     }),
