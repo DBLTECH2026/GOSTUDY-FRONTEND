@@ -29,8 +29,8 @@ export default function InscripcionPage() {
     fecha_nacimiento: '',
     sexo: 'M' as 'M' | 'F',
     direccion: '',
-    departamento: 'Lima',
-    provincia: 'Lima',
+    departamento: '',
+    provincia: '',
     distrito: '',
     ie_procedencia: '',
     anio_procedencia: '',
@@ -57,11 +57,68 @@ export default function InscripcionPage() {
   const [success, setSuccess] = useState<{ codigo: string } | null>(null);
   const [enviandoFactura, setEnviandoFactura] = useState(false);
 
+  const [departamentos, setDepartamentos] = useState<string[]>([]);
+  const [provincias, setProvincias] = useState<string[]>([]);
+  const [distritos, setDistritos] = useState<string[]>([]);
+  const [apoderadoDniState, setApoderadoDniState] =
+    useState<'idle' | 'checking' | 'found' | 'notfound'>('idle');
+
   useEffect(() => {
     inscripcionApi.catalogoNivelesGrados()
       .then((r) => setNiveles(r.data))
       .catch(() => setNiveles([]));
+    inscripcionApi.ubigeoDepartamentos()
+      .then((r) => setDepartamentos(r.data))
+      .catch(() => setDepartamentos([]));
   }, []);
+
+  // Cascada: al cambiar departamento, cargar provincias
+  useEffect(() => {
+    if (!form.departamento) {
+      setProvincias([]);
+      return;
+    }
+    inscripcionApi.ubigeoProvincias(form.departamento)
+      .then((r) => setProvincias(r.data))
+      .catch(() => setProvincias([]));
+  }, [form.departamento]);
+
+  // Cascada: al cambiar provincia, cargar distritos
+  useEffect(() => {
+    if (!form.departamento || !form.provincia) {
+      setDistritos([]);
+      return;
+    }
+    inscripcionApi.ubigeoDistritos(form.departamento, form.provincia)
+      .then((r) => setDistritos(r.data))
+      .catch(() => setDistritos([]));
+  }, [form.departamento, form.provincia]);
+
+  // Autocompletar nombres del apoderado desde RENIEC al escribir su DNI (8 dígitos)
+  useEffect(() => {
+    if (!/^\d{8}$/.test(form.apoderado_dni)) {
+      setApoderadoDniState('idle');
+      return;
+    }
+    setApoderadoDniState('checking');
+    const t = setTimeout(() => {
+      inscripcionApi.consultaDni(form.apoderado_dni)
+        .then((r) => {
+          if (r.encontrado) {
+            setApoderadoDniState('found');
+            setForm((f) => ({
+              ...f,
+              apoderado_nombres: f.apoderado_nombres || r.nombres || '',
+              apoderado_apellidos: f.apoderado_apellidos || r.apellidos || '',
+            }));
+          } else {
+            setApoderadoDniState('notfound');
+          }
+        })
+        .catch(() => setApoderadoDniState('notfound'));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [form.apoderado_dni]);
 
   useEffect(() => {
     const dni = form.dni_estudiante;
@@ -405,6 +462,9 @@ export default function InscripcionPage() {
                 fieldErrors={fieldErrors}
                 dniState={dniState}
                 dniMsg={dniMsg}
+                departamentos={departamentos}
+                provincias={provincias}
+                distritos={distritos}
               />
             )}
 
@@ -415,6 +475,7 @@ export default function InscripcionPage() {
                 fieldErrors={fieldErrors}
                 onEnviarFactura={handleEnviarFactura}
                 enviandoFactura={enviandoFactura}
+                apoderadoDniState={apoderadoDniState}
               />
             )}
 
@@ -486,6 +547,7 @@ export default function InscripcionPage() {
 
 function Paso1({
   form, update, niveles, gradosDisponibles, fieldErrors, dniState, dniMsg,
+  departamentos, provincias, distritos,
 }: {
   form: any;
   update: any;
@@ -494,6 +556,9 @@ function Paso1({
   fieldErrors: Record<string, string[]>;
   dniState: DniState;
   dniMsg: string | null;
+  departamentos: string[];
+  provincias: string[];
+  distritos: string[];
 }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
@@ -657,23 +722,61 @@ function Paso1({
         />
       </Field>
 
-      <Field label="Dirección" required err={fieldErrors.direccion?.[0]}>
+      <Field label="Departamento" err={fieldErrors.departamento?.[0]}>
+        <select
+          value={form.departamento}
+          onChange={(e) => {
+            update('departamento', e.target.value);
+            update('provincia', '');
+            update('distrito', '');
+          }}
+          className="input bg-bg-card cursor-pointer"
+        >
+          <option value="">Selecciona…</option>
+          {departamentos.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label="Provincia" err={fieldErrors.provincia?.[0]}>
+        <select
+          value={form.provincia}
+          onChange={(e) => {
+            update('provincia', e.target.value);
+            update('distrito', '');
+          }}
+          disabled={!form.departamento}
+          className="input bg-bg-card disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <option value="">Selecciona…</option>
+          {provincias.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label="Distrito" err={fieldErrors.distrito?.[0]}>
+        <select
+          value={form.distrito}
+          onChange={(e) => update('distrito', e.target.value)}
+          disabled={!form.provincia}
+          className="input bg-bg-card disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <option value="">Selecciona…</option>
+          {distritos.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label="Dirección" required err={fieldErrors.direccion?.[0]} className="sm:col-span-2">
         <input
           type="text"
           value={form.direccion}
           onChange={(e) => update('direccion', e.target.value)}
           className="input"
-          placeholder="Av. Principal 123"
-        />
-      </Field>
-
-      <Field label="Distrito" err={fieldErrors.distrito?.[0]}>
-        <input
-          type="text"
-          value={form.distrito}
-          onChange={(e) => update('distrito', e.target.value)}
-          className="input"
-          placeholder="San Isidro"
+          placeholder="Av. Principal 123, Mz. B Lt. 5"
         />
       </Field>
     </div>
@@ -683,13 +786,14 @@ function Paso1({
 /* ─── Paso 2 ─── */
 
 function Paso2({
-  form, update, fieldErrors, onEnviarFactura, enviandoFactura,
+  form, update, fieldErrors, onEnviarFactura, enviandoFactura, apoderadoDniState,
 }: {
   form: any;
   update: any;
   fieldErrors: Record<string, string[]>;
   onEnviarFactura: () => void;
   enviandoFactura: boolean;
+  apoderadoDniState: 'idle' | 'checking' | 'found' | 'notfound';
 }) {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
@@ -731,7 +835,25 @@ function Paso2({
         />
       </Field>
 
-      <Field label="DNI del apoderado" required err={fieldErrors.apoderado_dni?.[0]}>
+      <Field
+        label="DNI del apoderado"
+        required
+        err={fieldErrors.apoderado_dni?.[0]}
+        hint={
+          apoderadoDniState === 'checking' ? (
+            <span className="text-text-muted inline-flex items-center gap-1">
+              <span className="w-3 h-3 border border-text-muted/40 border-t-trilce-primary rounded-full animate-spin-soft" />
+              Consultando RENIEC…
+            </span>
+          ) : apoderadoDniState === 'found' ? (
+            <span className="text-success inline-flex items-center gap-1">
+              <Icon name="CircleCheck" size={12} /> Datos cargados desde RENIEC
+            </span>
+          ) : apoderadoDniState === 'notfound' ? (
+            <span className="text-text-muted">No se hallaron datos en RENIEC, complétalos manualmente</span>
+          ) : null
+        }
+      >
         <input
           type="text"
           inputMode="numeric"
@@ -857,9 +979,16 @@ function FileBlock({
         onChange={(e) => onPick(e.target.files?.[0] ?? null)}
         className="hidden"
       />
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         className={`flex items-center gap-3 p-4 border-2 border-dashed rounded-md transition-colors duration-200 text-left cursor-pointer ${
           file
             ? 'bg-success/5 border-success'
@@ -903,7 +1032,7 @@ function FileBlock({
             <Icon name="X" size={16} />
           </button>
         )}
-      </button>
+      </div>
     </div>
   );
 }

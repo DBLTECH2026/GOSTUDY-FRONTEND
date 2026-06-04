@@ -78,6 +78,19 @@ export const inscripcionApi = {
   catalogoNivelesGrados: () =>
     apiFetch<{ data: NivelCatalogo[] }>('/catalogos/niveles-grados'),
 
+  ubigeoDepartamentos: () =>
+    apiFetch<{ data: string[] }>('/catalogos/ubigeo/departamentos'),
+
+  ubigeoProvincias: (departamento: string) =>
+    apiFetch<{ data: string[] }>(
+      `/catalogos/ubigeo/provincias?departamento=${encodeURIComponent(departamento)}`,
+    ),
+
+  ubigeoDistritos: (departamento: string, provincia: string) =>
+    apiFetch<{ data: string[] }>(
+      `/catalogos/ubigeo/distritos?departamento=${encodeURIComponent(departamento)}&provincia=${encodeURIComponent(provincia)}`,
+    ),
+
   verificarDni: (dni: string) =>
     apiFetch<{
       disponible: boolean;
@@ -87,6 +100,12 @@ export const inscripcionApi = {
       method: 'POST',
       body: JSON.stringify({ dni }),
     }),
+
+  consultaDni: (dni: string) =>
+    apiFetch<{ encontrado: boolean; nombres?: string; apellidos?: string }>(
+      '/inscripcion/consulta-dni',
+      { method: 'POST', body: JSON.stringify({ dni }) },
+    ),
 
   store: (payload: StoreInscripcionPayload) => {
     const fd = new FormData();
