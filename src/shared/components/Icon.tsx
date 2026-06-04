@@ -15,6 +15,8 @@ export type IconName =
   | 'Users'
   | 'Bell'
   | 'ChevronDown'
+  | 'ChevronUp'
+  | 'ChevronsUpDown'
   | 'Search'
   | 'Download'
   | 'Plus'
@@ -65,6 +67,8 @@ const PATHS: Record<IconName, string> = {
   Users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
   Bell: 'M10.268 21a2 2 0 0 0 3.464 0 M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326',
   ChevronDown: 'm6 9 6 6 6-6',
+  ChevronUp: 'm18 15-6-6-6 6',
+  ChevronsUpDown: 'm7 15 5 5 5-5 M7 9l5-5 5 5',
   Search: 'm21 21-4.34-4.34 M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12',
   Download: 'M12 15V3 M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5',
   Plus: 'M5 12h14 M12 5v14',

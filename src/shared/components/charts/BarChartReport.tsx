@@ -26,6 +26,10 @@ type Props = {
   formatValue?: (v: number) => string;
   /** Resalta la barra con mayor valor en verde (default true). */
   highlightMax?: boolean;
+  /** Callback al hacer clic en una barra (habilita modo interactivo). */
+  onBarClick?: (datum: BarDatum) => void;
+  /** Label de la barra activa/seleccionada (se resalta, el resto se atenúa). */
+  activeLabel?: string;
 };
 
 const TRILCE_PRIMARY = '#dc4a17';      // naranja Trilce
@@ -38,6 +42,8 @@ export function BarChartReport({
   unidad = '',
   formatValue,
   highlightMax = true,
+  onBarClick,
+  activeLabel,
 }: Props) {
   if (!data || data.length === 0) {
     return (
@@ -84,19 +90,30 @@ export function BarChartReport({
               );
             }}
           />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={60}>
-            {data.map((d, i) => (
-              <Cell
-                key={i}
-                fill={
-                  highlightMax && d.value === maxValue && maxValue > 0
-                    ? SUCCESS
-                    : d.value === 0
-                    ? TRILCE_PRIMARY_SOFT
-                    : TRILCE_PRIMARY
-                }
-              />
-            ))}
+          <Bar
+            dataKey="value"
+            radius={[4, 4, 0, 0]}
+            maxBarSize={60}
+            onClick={onBarClick ? (d) => onBarClick(d.payload as BarDatum) : undefined}
+            cursor={onBarClick ? 'pointer' : undefined}
+          >
+            {data.map((d, i) => {
+              const baseFill =
+                highlightMax && d.value === maxValue && maxValue > 0
+                  ? SUCCESS
+                  : d.value === 0
+                  ? TRILCE_PRIMARY_SOFT
+                  : TRILCE_PRIMARY;
+              // Si hay una barra activa, atenuamos las demás.
+              const dimmed = activeLabel !== undefined && d.label !== activeLabel;
+              return (
+                <Cell
+                  key={i}
+                  fill={baseFill}
+                  fillOpacity={dimmed ? 0.3 : 1}
+                />
+              );
+            })}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
