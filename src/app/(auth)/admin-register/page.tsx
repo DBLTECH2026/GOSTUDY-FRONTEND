@@ -1,33 +1,36 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { ApiError } from '@/shared/lib/api';
-import { authApi } from '@/modules/auth/api';
-import { useAuth } from '@/modules/auth/AuthProvider';
-import { Icon } from '@/shared/components/Icon';
-import { notify } from '@/shared/lib/notify';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ApiError } from "@/shared/lib/api";
+import { authApi } from "@/modules/auth/api";
+import { useAuth } from "@/modules/auth/AuthProvider";
+import { Icon } from "@/shared/components/Icon";
+import { notify } from "@/shared/lib/notify";
 
 export default function AdminRegisterPage() {
   const router = useRouter();
   const { setSession } = useAuth();
 
   const [form, setForm] = useState({
-    nombres: '',
-    apellidos: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-    dni: '',
-    telefono: '',
-    rol: 'admin' as 'admin' | 'docente',
+    nombres: "",
+    apellidos: "",
+    email: "",
+    password: "",
+    password_confirmation: "",
+    dni: "",
+    telefono: "",
+    rol: "admin" as "admin" | "docente",
   });
 
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+  function update<K extends keyof typeof form>(
+    key: K,
+    value: (typeof form)[K],
+  ) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
@@ -36,12 +39,12 @@ export default function AdminRegisterPage() {
     setFieldErrors({});
 
     if (form.password !== form.password_confirmation) {
-      notify.warning('Las contraseñas no coinciden.');
+      notify.warning("Las contraseñas no coinciden.");
       return;
     }
 
     setLoading(true);
-    const tid = notify.loading('Creando cuenta…');
+    const tid = notify.loading("Creando cuenta…");
     try {
       const session = await authApi.registerAdmin({
         ...form,
@@ -50,14 +53,17 @@ export default function AdminRegisterPage() {
       });
       setSession(session);
       notify.dismiss(tid);
-      notify.success({ title: 'Cuenta creada', description: 'Bienvenido al panel administrativo.' });
-      router.replace('/dashboard');
+      notify.success({
+        title: "Cuenta creada",
+        description: "Bienvenido al panel administrativo.",
+      });
+      router.replace("/dashboard");
     } catch (err) {
       notify.dismiss(tid);
       if (err instanceof ApiError && err.errors) {
         setFieldErrors(err.errors);
       }
-      notify.apiError(err, 'No se pudo crear la cuenta.');
+      notify.apiError(err, "No se pudo crear la cuenta.");
     } finally {
       setLoading(false);
     }
@@ -83,7 +89,7 @@ export default function AdminRegisterPage() {
                 type="text"
                 required
                 value={form.nombres}
-                onChange={(e) => update('nombres', e.target.value)}
+                onChange={(e) => update("nombres", e.target.value)}
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
@@ -92,7 +98,7 @@ export default function AdminRegisterPage() {
                 type="text"
                 required
                 value={form.apellidos}
-                onChange={(e) => update('apellidos', e.target.value)}
+                onChange={(e) => update("apellidos", e.target.value)}
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
@@ -103,7 +109,7 @@ export default function AdminRegisterPage() {
               type="email"
               required
               value={form.email}
-              onChange={(e) => update('email', e.target.value)}
+              onChange={(e) => update("email", e.target.value)}
               className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
             />
           </Field>
@@ -115,7 +121,9 @@ export default function AdminRegisterPage() {
                 inputMode="numeric"
                 maxLength={8}
                 value={form.dni}
-                onChange={(e) => update('dni', e.target.value.replace(/\D/g, ''))}
+                onChange={(e) =>
+                  update("dni", e.target.value.replace(/\D/g, ""))
+                }
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
@@ -123,7 +131,7 @@ export default function AdminRegisterPage() {
               <input
                 type="tel"
                 value={form.telefono}
-                onChange={(e) => update('telefono', e.target.value)}
+                onChange={(e) => update("telefono", e.target.value)}
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
@@ -132,11 +140,13 @@ export default function AdminRegisterPage() {
           <Field label="Rol" name="rol" errors={fieldErrors}>
             <select
               value={form.rol}
-              onChange={(e) => update('rol', e.target.value as 'admin' | 'docente')}
+              onChange={(e) =>
+                update("rol", e.target.value as "admin" | "docente")
+              }
               className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary bg-bg-card"
             >
               <option value="admin">Administrador</option>
-              <option value="docente">Docente</option>
+              <option value="docente">Maestro</option>
             </select>
           </Field>
 
@@ -147,17 +157,23 @@ export default function AdminRegisterPage() {
                 required
                 minLength={6}
                 value={form.password}
-                onChange={(e) => update('password', e.target.value)}
+                onChange={(e) => update("password", e.target.value)}
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
-            <Field label="Confirmar contraseña" name="password_confirmation" errors={fieldErrors}>
+            <Field
+              label="Confirmar contraseña"
+              name="password_confirmation"
+              errors={fieldErrors}
+            >
               <input
                 type="password"
                 required
                 minLength={6}
                 value={form.password_confirmation}
-                onChange={(e) => update('password_confirmation', e.target.value)}
+                onChange={(e) =>
+                  update("password_confirmation", e.target.value)
+                }
                 className="w-full px-4 py-2.5 border border-border rounded-sm focus:outline-none focus:border-trilce-primary"
               />
             </Field>
@@ -168,18 +184,23 @@ export default function AdminRegisterPage() {
             disabled={loading}
             className="w-full bg-trilce-accent hover:bg-trilce-accent/90 disabled:opacity-60 text-white font-semibold py-3 rounded-sm transition-colors"
           >
-            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            {loading ? "Creando cuenta…" : "Crear cuenta"}
           </button>
         </form>
 
         <p className="text-center text-sm text-text-secondary mt-6">
-          ¿Ya tienes cuenta?{' '}
-          <Link href="/admin-login" className="text-trilce-primary font-semibold hover:underline">
+          ¿Ya tienes cuenta?{" "}
+          <Link
+            href="/admin-login"
+            className="text-trilce-primary font-semibold hover:underline"
+          >
             Inicia sesión
           </Link>
         </p>
         <p className="text-center text-xs text-text-muted mt-3">
-          <Link href="/" className="hover:underline">← Volver al inicio</Link>
+          <Link href="/" className="hover:underline">
+            ← Volver al inicio
+          </Link>
         </p>
       </div>
     </main>
